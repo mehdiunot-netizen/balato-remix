@@ -429,3 +429,133 @@ body:has(.table:not([hidden])) {
   #game:has(.shop) { min-height: min(90dvh, 420px); grid-template-rows: auto 1fr; }
   .shop { align-self: stretch; border-color: #b98868; background: linear-gradient(145deg, #30394c, #212433); }
 }
+
+/* Original observatory illustrations and brass-inlaid playing cards. */
+:root { --gold: #f5cd8a; --muted: #dbded0; --line: #6e806f; }
+.lobby {
+  background: radial-gradient(ellipse at center, #101e2b18 22%, #0b15224d 78%),
+    #122737 url('./art/observatoire.jpg') center / cover no-repeat;
+}
+.lobby h1 {
+  color: #fff0c7;
+  text-shadow: 2px 3px #945339, 4px 6px #0c1c2c, 0 0 20px #151f27;
+}
+.lobby-brand img { border-color: #e1ba7a; }
+.lobby-actions { padding: 5px; border: 1px solid #bd91618a; border-radius: 12px; background: #112132da; }
+body:has(.table:not([hidden])) {
+  background: repeating-linear-gradient(45deg, #ced39f0a 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 68% 48%, #335b55, #102b39);
+}
+.play { background: radial-gradient(ellipse at 60% 70%, #396d60, #143641); border: 1px solid #8d9c7d; }
+.blind, .loadout, .shop, .finish, .rules {
+  border-color: #86755b;
+  background: linear-gradient(160deg, #293d43, #192b37 90%);
+}
+.blind { border-top-color: #dfaa72; }
+button { background: #35516a; border-color: #7696a0; }
+.primary { background: linear-gradient(#ffdf9f, #dca568); border-color: #ffedb8; color: #1d2630; }
+.card {
+  border-color: #ab8d6d;
+  border-radius: 7px;
+  background: linear-gradient(150deg, #fff7dc, #e8d3a6);
+  color: #203b48;
+}
+.card.red { color: #963d46; }
+.card[aria-pressed="true"] { border-color: #fae3a9; box-shadow: 0 0 0 2px #d28745, 0 5px #122c33; }
+.card-art { inset: 12% 20%; }
+.court {
+  width: 100%;
+  height: 100%;
+  border: 1px solid #987352;
+  border-radius: 4px;
+  background: #ebd4a3 url('./art/figures.jpg') left center / 300% 100% no-repeat;
+  box-shadow: none;
+}
+.court-12 { background-position: center; }
+.court-13 { background-position: right; }
+.pips {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template: repeat(5, 1fr) / repeat(3, 1fr);
+  place-items: center;
+  font-size: clamp(.55rem, 1.7dvh, .95rem);
+  line-height: 1;
+}
+.ace-pip { filter: drop-shadow(0 2px #a28255); }
+.card-emblem {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  position: relative;
+  width: 39px;
+  height: 39px;
+  border: 1px solid #c5a470;
+  border-radius: 7px;
+  background: #20323e url('./art/emblemes.jpg') var(--emblem-x, 0%) var(--emblem-y, 0%) / 400% 400% no-repeat;
+  box-shadow: 0 2px #121e23;
+  vertical-align: middle;
+}
+.card-emblem > span { position: absolute; inset: auto 2px 0 auto; color: #ffecad; font: 700 .66rem Georgia, serif; }
+.emblem-1, .emblem-5, .emblem-9, .emblem-13 { --emblem-x: 33.333%; }
+.emblem-2, .emblem-6, .emblem-10, .emblem-14 { --emblem-x: 66.667%; }
+.emblem-3, .emblem-7, .emblem-11, .emblem-15 { --emblem-x: 100%; }
+.emblem-4, .emblem-5, .emblem-6, .emblem-7 { --emblem-y: 33.333%; }
+.emblem-8, .emblem-9, .emblem-10, .emblem-11 { --emblem-y: 66.667%; }
+.emblem-12, .emblem-13, .emblem-14, .emblem-15 { --emblem-y: 100%; }
+.loadout li { background: linear-gradient(135deg, #3e5860, #23303d); border-color: #96896d; }
+.loadout summary strong { display: inline; }
+.shop .offers li {
+  background: linear-gradient(145deg, #3b5358, #263846);
+  border-color: #a08a69;
+  border-radius: 9px;
+}
+.pack-shelf button {
+  background: repeating-linear-gradient(132deg, transparent 0 8px, #e7c67618 9px 10px),
+    linear-gradient(130deg, #3b605a, #2d4456);
+  border-color: #b49c6c;
+}
+.augure-emblem {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 42px;
+  border: 2px double #ddbd80;
+  border-radius: 7px;
+  background: radial-gradient(circle, #548c83, #193742 70%);
+  color: #ffe7b1;
+  font: 700 1.55rem/1 Georgia, serif;
+  box-shadow: 0 2px #142532;
+}
+.augure-gold { background: radial-gradient(circle, #a4662c, #412c2d 75%); }
+.augure-prism { background: conic-gradient(from 35deg, #453c71, #416361, #75415f, #453c71); }
+.augure-steel { background: linear-gradient(130deg, #425e69, #6b8e93, #223c4b); }
+.augure-wild { background: conic-gradient(#265d58, #734c39, #62507d, #265d58); }
+.augure-prune { background: radial-gradient(circle, #a25b4c, #412d3c); }
+.blind-cleared h3 { animation: blind-glint 480ms ease-out; }
+@keyframes blind-glint {
+  45% { color: #fff2bf; text-shadow: 0 0 13px #ffd27d; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blind-cleared h3 { animation: none; }
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  .card-emblem, .augure-emblem { width: 30px; height: 30px; }
+  .shop .offers li { min-height: 92px; }
+}
+.augure-emblem {
+  position: relative;
+  background-image: url('./art/augures.jpg');
+  background-size: 300% 200%;
+  background-position: var(--augure-x, 0%) var(--augure-y, 0%);
+}
+.augure-emblem > span { position: absolute; inset: auto 2px 1px auto; font-size: .68rem; }
+.augure-steel, .augure-wild { --augure-x: 50%; }
+.augure-gold, .augure-prune { --augure-x: 100%; }
+.augure-bonus, .augure-wild, .augure-prune { --augure-y: 100%; }
+@media (orientation: landscape) and (min-width: 720px) {
+  .shop .augure-options:has(> li:nth-child(5)) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (orientation: landscape) and (min-height: 385px) {
+  .shop .card-emblem, .shop .augure-emblem { width: 48px; height: 48px; }
+}

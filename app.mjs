@@ -1,4 +1,4 @@
-import { advance, augures, blindFor, buy, chooseAugure, chooseEclipse, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, start, useCards } from './game.mjs?v=12';
+import { advance, augures, blindFor, buy, chooseAugure, chooseEclipse, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, start, useCards } from './game.mjs?v=13';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -38,12 +38,24 @@ enter.addEventListener('click', () => {
   showTable();
 });
 
-const court = { 11: ['◆', 'Valet'], 12: ['✦', 'Dame'], 13: ['♜', 'Roi'] };
+const court = { 11: 'Valet', 12: 'Dame', 13: 'Roi' };
+const pipPositions = {
+  2: [2, 14], 3: [2, 8, 14], 4: [1, 3, 13, 15], 5: [1, 3, 8, 13, 15],
+  6: [1, 3, 7, 9, 13, 15], 7: [1, 3, 5, 7, 9, 13, 15],
+  8: [1, 3, 5, 7, 9, 11, 13, 15], 9: [1, 3, 4, 6, 8, 10, 12, 13, 15],
+  10: [1, 3, 4, 5, 6, 10, 11, 12, 13, 15],
+};
+
 function cardArt(card) {
-  if (court[card.rank]) {
-    return '<span class="court"><span>' + court[card.rank][0] + '</span></span>';
-  }
-  return '<span class="suit">' + card.suit + '</span>';
+  if (court[card.rank]) return '<span class="court court-' + card.rank + '"></span>';
+  const positions = pipPositions[card.rank];
+  if (!positions) return '<span class="suit ace-pip">' + card.suit + '</span>';
+  return '<span class="pips">' + positions.map(place => '<span style="grid-area:' +
+    (1 + Math.floor((place - 1) / 3)) + '/' + (1 + (place - 1) % 3) + '">' + card.suit + '</span>').join('') + '</span>';
+}
+
+function emblem(index, mark) {
+  return '<span class="card-emblem emblem-' + index + '" aria-hidden="true"><span>' + mark + '</span></span>';
 }
 
 function restore() {
@@ -76,11 +88,11 @@ function render(focus, scored = false) {
   const blind = blindFor(state);
   const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
   const loadout = state.owned.map((id, index) => {
-    const { mark, name, text, theme } = jokers[id];
+    const { mark, name, text } = jokers[id];
     const activation = activations.findIndex(step => step.slot === undefined ? step.id === id : step.slot === index);
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
-    return `<li class="${theme || ''}${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong><span class="joker-icon" aria-hidden="true">${mark}</span>
+    return `<li class="${pulse ? 'triggered' : ''}${negative ? ' negative-joker' : ''}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong>${emblem(id, mark)}
       ${name}${negative ? ' · Négatif' : ''}</strong></summary><small>${text}</small></details></li>`;
   }).join('');
 
@@ -94,7 +106,7 @@ function render(focus, scored = false) {
         <div class="cards">${cards.map((card, i) => {
           const rank = faces[card.rank] || card.rank;
           return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''} ${card.augure || ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
-            aria-label="${court[card.rank]?.[1] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}${card.augure ? ' · ' + augures[card.augure].name : ''}" aria-pressed="${selected.has(card.id)}"
+            aria-label="${court[card.rank] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}${card.augure ? ' · ' + augures[card.augure].name : ''}" aria-pressed="${selected.has(card.id)}"
             ${selected.size === 5 && !selected.has(card.id) ? 'disabled' : ''}>
             <span class="rank" aria-hidden="true">${rank}<small>${card.suit}</small></span>
             <span class="card-art" aria-hidden="true">${cardArt(card)}</span>
@@ -120,7 +132,7 @@ function render(focus, scored = false) {
           const joker = jokers[state.owned[index]];
           const title = effect === 'negative' ? 'Halo noir' : 'Reflet';
           const text = effect === 'negative' ? 'Ce joker libère son emplacement.' : 'Ajoute une copie normale. Tous tes jokers restent équipés.';
-          return `<li><strong>${title} · ${joker.name}</strong><small>${text}</small>
+          return `<li>${emblem(effect === 'negative' ? 14 : 15, effect === 'negative' ? '◐' : '◫')}<strong>${title} · ${joker.name}</strong><small>${text}</small>
             <button class="primary" data-eclipse="${effect}">Appliquer</button></li>`;
         }).join('')}</ul>
       </section>`;
@@ -141,9 +153,9 @@ function render(focus, scored = false) {
       <section class="shop">
         <header class="shop-header"><div><h3 tabindex="-1">Augures</h3><p>Améliore une carte de ton paquet.</p></div>
           <button data-action="skip-pack">Passer</button></header>
-        <ul class="offers">${state.choices.map(card => {
+        <ul class="offers augure-options">${state.choices.map(card => {
           const augure = augures[card.augure];
-          return `<li><strong>${card.suit ? (faces[card.rank] || card.rank) + card.suit + ' · ' : ''}${augure.name}</strong>
+          return `<li><span class="augure-emblem augure-${card.augure}" aria-hidden="true"><span>${augure.mark}</span></span><strong>${card.suit ? (faces[card.rank] || card.rank) + card.suit + ' · ' : ''}${augure.name}</strong>
             <small>${augure.text}</small><button class="primary" data-augure="${card.id}">Choisir</button></li>`;
         }).join('')}</ul>
       </section>`;
@@ -153,7 +165,7 @@ function render(focus, scored = false) {
     const eclipse = eclipseOffer(state);
     content = `
       <section class="shop">
-        <header class="shop-header">
+        <header class="shop-header ${scored ? 'blind-cleared' : ''}">
           <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits${state.goldReward ? ' (dont ' + state.goldReward + ' Ducat)' : ''}</p></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
@@ -165,7 +177,7 @@ function render(focus, scored = false) {
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
           const full = jokerSlotsUsed(state) >= 3;
-          return `<li class="${joker.theme || ''}"><span class="mark" aria-hidden="true">${joker.mark}</span>
+          return `<li>${emblem(id, joker.mark)}
           <div><strong>${joker.name}</strong><small>${joker.text}</small></div>
           <button data-buy="${id}" aria-label="Acheter ${joker.name} pour ${joker.price} crédits"
           ${full || state.credits < joker.price ? 'disabled' : ''}>${joker.price} cr.</button></li>`;
@@ -174,7 +186,7 @@ function render(focus, scored = false) {
       </section>`;
   } else {
     content = `
-      <section class="finish">
+      <section class="finish ${scored && state.phase === 'win' ? 'blind-cleared' : ''}">
         <h3 tabindex="-1">${state.phase === 'win' ? 'Victoire !' : 'Fin de partie'}</h3>
         <p>${state.phase === 'win' ? (state.legacy ? 'Vous avez franchi les six blindes.' : 'Vous avez terminé la huitième mise.') : 'Vous avez épuisé vos mains ou vos cartes avant d’atteindre l’objectif.'}</p>
         ${state.phase === 'win' && !state.legacy ?
