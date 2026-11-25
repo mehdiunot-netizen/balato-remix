@@ -1,4 +1,4 @@
-import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=10';
+import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=11';
 export { jokers };
 
 const suits = ['♠', '♥', '♣', '♦'];
@@ -70,6 +70,7 @@ export const augures = {
   steel: { name: 'Armure', mark: '◆', text: '×1,5 au multiplicateur quand cette carte reste en main.' },
   gold: { name: 'Ducat', mark: '¤', text: '+3 crédits si cette carte reste en main quand tu gagnes la blinde.' },
   bonus: { name: 'Réserve', mark: '✚', text: '+30 jetons quand cette carte marque.' },
+  prune: { name: 'Fil coupé', mark: '✂', text: 'Retire définitivement de une à cinq cartes de ton choix.' },
   wild: { name: 'Caméléon', mark: '✺', text: 'Compte comme n’importe quelle enseigne, sans changer son rang.' },
 };
 export const packs = [
@@ -125,14 +126,14 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, t
     steps?.push({ type: 'augure', name: augures.steel.name, factor: 1.5 });
   }
   const factors = [];
-  for (const id of owned) {
+  for (const [slot, id] of owned.entries()) {
     const [extraChips, extraMult, extraFactor] = jokers[id].bonus(scoring, context);
     chips += extraChips;
     mult += extraMult;
     factor *= extraFactor;
     if (steps) {
-      if (extraChips || extraMult) steps.push({ type: 'add', id, chips: extraChips, mult: extraMult });
-      if (extraFactor !== 1) factors.push({ type: 'factor', id, factor: extraFactor });
+      if (extraChips || extraMult) steps.push({ type: 'add', id, slot, chips: extraChips, mult: extraMult });
+      if (extraFactor !== 1) factors.push({ type: 'factor', id, slot, factor: extraFactor });
     }
   }
   mult *= factor;
@@ -155,20 +156,20 @@ export function previewHand(state, cards, trace = false) {
 }
 
 export function start(seed = createSeed()) {
-  return deal({ seed, round: 0, credits: 3, owned: [], catalogSize: jokers.length });
+  return deal({ seed, seededBlinds: true, round: 0, credits: 3, owned: [], catalogSize: jokers.length });
 }
 
 function deal(carry) {
   const blind = blindFor(carry);
-  const pile = shuffle(deck, seededRandom(carry.seed, 'deck', carry.round)).map(card => {
+  const pile = shuffle(remainingDeck(carry), seededRandom(carry.seed, 'deck', carry.round)).map(card => {
     const augure = carry.enhancements?.[card.id];
     return augure ? { ...card, augure } : card;
   });
   const hand = pile.splice(0, blind.size ?? 8);
   const plays = blind.plays ?? 4;
-  const target = carry.legacy ? blind.target : Math.min(
-    blind.target, reachableScore(hand, pile, plays, carry.owned),
-  );
+  const variation = carry.seededBlinds ? 0.95 + seededRandom(carry.seed, 'blind', carry.round)() * 0.1 : 1;
+  const nominalTarget = Math.min(Number.MAX_SAFE_INTEGER, Math.round(blind.target * variation));
+  const target = carry.legacy ? blind.target : Math.min(nominalTarget, reachableScore(hand, pile, plays, carry.owned));
   return { ...carry, target, phase: 'play', score: 0, plays, discards: blind.discards ?? 3,
     hand, pile, offers: [], last: null, reward: 0 };
 }
@@ -225,33 +226,53 @@ export function useCards(state, ids, action) {
   }
   next.pile = state.pile.slice(cards.length);
   next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(state.pile.slice(0, cards.length));
-  return next;
+  return next.hand.length ? next : { ...next, phase: 'lose' };
 }
 
 export function buy(state, id) {
   if (state.phase !== 'shop' || !state.offers.includes(id) || state.owned.includes(id) ||
-      state.owned.length >= 3 || state.credits < jokers[id].price) return state;
+      jokerSlotsUsed(state) >= 3 || state.credits < jokers[id].price) return state;
   return { ...state, credits: state.credits - jokers[id].price,
     owned: [...state.owned, id], offers: state.offers.filter(offer => offer !== id) };
 }
 
+function remainingDeck(state) {
+  return deck.filter(card => !state.removed?.includes(card.id));
+}
+
+export function removableCount(state) {
+  return Math.min(5, remainingDeck(state).length - 8);
+}
+
+export function deckFor(state) {
+  return remainingDeck(state);
+}
+
+function augureOptions(state) {
+  const candidates = remainingDeck(state).filter(card => !state.enhancements?.[card.id]);
+  const kinds = Object.keys(augures).filter(kind => kind !== 'prune' || removableCount(state) > 0);
+  return { candidates, kinds, count: Math.min(kinds.length, candidates.length + Number(kinds.includes('prune'))) };
+}
+
 export function offeredPack(state) {
   if (state.phase !== 'shop' || state.packBought) return undefined;
-  const available = deck.length - Object.keys(state.enhancements ?? {}).length;
-  if (available < packs[0].count) return undefined;
+  const { count } = augureOptions(state);
+  if (count < packs[0].count) return undefined;
   const random = seededRandom(state.seed, 'pack-offer', state.round);
-  return available >= packs[1].count && random() < 0.25 ? 1 : 0;
+  return count >= packs[1].count && random() < 0.25 ? 1 : 0;
 }
 
 export function openPack(state, id) {
   const pack = packs[id];
   if (!pack || offeredPack(state) !== id || state.credits < pack.price) return state;
-  const candidates = deck.filter(card => !state.enhancements?.[card.id]);
-  if (candidates.length < pack.count) return state;
-  const random = seededRandom(state.seed, 'augures', state.round);
-  const kinds = shuffle(Object.keys(augures), seededRandom(state.seed, 'augure-kinds', state.round));
-  const choices = shuffle(candidates, random).slice(0, pack.count)
-    .map((card, index) => ({ ...card, augure: kinds[index] }));
+  const { candidates, kinds } = augureOptions(state);
+  const shuffledCards = shuffle(candidates, seededRandom(state.seed, 'augures', state.round));
+  const shuffledKinds = shuffle(kinds, seededRandom(state.seed, 'augure-kinds', state.round));
+  let index = 0;
+  const choices = shuffledKinds.flatMap(augure => {
+    if (augure === 'prune') return [{ id: 'prune', augure }];
+    return index < shuffledCards.length ? [{ ...shuffledCards[index++], augure }] : [];
+  }).slice(0, pack.count);
   return { ...state, phase: 'pack', packBought: true, credits: state.credits - pack.price, choices };
 }
 
@@ -259,8 +280,52 @@ export function chooseAugure(state, id) {
   if (state.phase !== 'pack') return state;
   const choice = state.choices.find(card => card.id === id);
   if (!choice && id !== null) return state;
+  if (choice?.augure === 'prune') return { ...state, phase: 'prune' };
   const enhancements = choice ? { ...state.enhancements, [choice.id]: choice.augure } : state.enhancements;
   return { ...state, phase: 'shop', choices: [], enhancements };
+}
+
+export function pruneDeck(state, ids) {
+  if (state.phase !== 'prune') return state;
+  if (ids === null) return { ...state, phase: 'pack' };
+  if (!ids.length || ids.length > removableCount(state) || new Set(ids).size !== ids.length ||
+      ids.some(id => !deck.some(card => card.id === id) || state.removed?.includes(id))) return state;
+  return { ...state, phase: 'shop', choices: [], removed: [...(state.removed ?? []), ...ids] };
+}
+
+export const ECLIPSE_PRICE = 5;
+
+export function jokerSlotsUsed(state) {
+  return state.owned.length - (state.negativeSlots?.length ?? 0);
+}
+
+export function eclipseOffer(state) {
+  if (state.phase !== 'shop' || state.eclipseBought || !state.owned.length) return false;
+  const random = seededRandom(state.seed, 'eclipse-offer', state.round);
+  return random() < 0.4 && (jokerSlotsUsed(state) < 3 ||
+    state.owned.some((_, index) => !state.negativeSlots?.includes(index)));
+}
+
+export function openEclipse(state) {
+  if (!eclipseOffer(state) || state.credits < ECLIPSE_PRICE) return state;
+  const random = seededRandom(state.seed, 'eclipse-targets', state.round);
+  const normal = state.owned.map((_, index) => index).filter(index => !state.negativeSlots?.includes(index));
+  const eclipse = {
+    negative: normal.length ? normal[Math.floor(random() * normal.length)] : null,
+    copy: jokerSlotsUsed(state) < 3 ? Math.floor(random() * state.owned.length) : null,
+  };
+  return { ...state, phase: 'eclipse', eclipse, eclipseBought: true, credits: state.credits - ECLIPSE_PRICE };
+}
+
+export function chooseEclipse(state, effect) {
+  if (state.phase !== 'eclipse') return state;
+  const next = { ...state, phase: 'shop', eclipse: null };
+  if (effect === null) return next;
+  const index = state.eclipse[effect];
+  if (index == null) return state;
+  if (effect === 'negative') return { ...next, negativeSlots: [...(state.negativeSlots ?? []), index] };
+  if (effect === 'copy') return { ...next, owned: [...state.owned, state.owned[index]] };
+  return state;
 }
 
 export function continueRun(state) {
@@ -272,5 +337,6 @@ export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
     credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
-    enhancements: state.enhancements });
+    enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots,
+    seededBlinds: state.seededBlinds });
 }

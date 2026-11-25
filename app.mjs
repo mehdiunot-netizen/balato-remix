@@ -1,4 +1,4 @@
-import { advance, augures, blindFor, buy, chooseAugure, continueRun, jokers, offeredPack, openPack, packs, previewHand, restoreRun, start, useCards } from './game.mjs?v=10';
+import { advance, augures, blindFor, buy, chooseAugure, chooseEclipse, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, start, useCards } from './game.mjs?v=11';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -75,12 +75,13 @@ function persist() {
 function render(focus, scored = false) {
   const blind = blindFor(state);
   const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
-  const loadout = state.owned.map(id => {
+  const loadout = state.owned.map((id, index) => {
     const { mark, name, text, theme } = jokers[id];
-    const activation = activations.findIndex(step => step.id === id);
+    const activation = activations.findIndex(step => step.slot === undefined ? step.id === id : step.slot === index);
     const pulse = scored && activation >= 0;
-    return `<li class="${theme || ''}${pulse ? ' triggered' : ''}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong><span class="joker-icon" aria-hidden="true">${mark}</span>
-      ${name}</strong></summary><small>${text}</small></details></li>`;
+    const negative = state.negativeSlots?.includes(index);
+    return `<li class="${theme || ''}${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong><span class="joker-icon" aria-hidden="true">${mark}</span>
+      ${name}${negative ? ' · Négatif' : ''}</strong></summary><small>${text}</small></details></li>`;
   }).join('');
 
   let content;
@@ -109,6 +110,32 @@ function render(focus, scored = false) {
           <button data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser <small>${state.discards} restantes</small></button>
         </div>
       </section>`;
+  } else if (state.phase === 'eclipse') {
+    content = `
+      <section class="shop">
+        <header class="shop-header"><div><h3 tabindex="-1">Éclipses</h3><p>Choisis un effet.</p></div>
+          <button data-action="skip-eclipse">Passer</button></header>
+        <ul class="offers eclipse-options">${Object.entries(state.eclipse).map(([effect, index]) => {
+          if (index === null) return '';
+          const joker = jokers[state.owned[index]];
+          const title = effect === 'negative' ? 'Halo noir' : 'Reflet';
+          const text = effect === 'negative' ? 'Ce joker libère son emplacement.' : 'Ajoute une copie normale. Tous tes jokers restent équipés.';
+          return `<li><strong>${title} · ${joker.name}</strong><small>${text}</small>
+            <button class="primary" data-eclipse="${effect}">Appliquer</button></li>`;
+        }).join('')}</ul>
+      </section>`;
+  } else if (state.phase === 'prune') {
+    const limit = removableCount(state);
+    content = `
+      <section class="shop prune-shop">
+        <header class="shop-header"><div><h3 tabindex="-1">Fil coupé</h3><p>Sélectionne de 1 à ${limit} cartes.</p></div>
+          <button data-action="back-prune">Retour</button>
+          <button class="primary" data-action="confirm-prune" ${selected.size ? '' : 'disabled'}>Retirer (${selected.size})</button></header>
+        <div class="prune-cards" aria-label="Cartes du paquet">${deckFor(state).map(card => `
+          <button data-prune="${card.id}" aria-label="${faces[card.rank] || card.rank} de ${names[card.suit]}"
+            aria-pressed="${selected.has(card.id)}">${faces[card.rank] || card.rank}${card.suit}</button>
+        `).join('')}</div>
+      </section>`;
   } else if (state.phase === 'pack') {
     content = `
       <section class="shop">
@@ -116,37 +143,40 @@ function render(focus, scored = false) {
           <button data-action="skip-pack">Passer</button></header>
         <ul class="offers">${state.choices.map(card => {
           const augure = augures[card.augure];
-          return `<li><strong>${faces[card.rank] || card.rank}${card.suit} · ${augure.name}</strong>
+          return `<li><strong>${card.suit ? (faces[card.rank] || card.rank) + card.suit + ' · ' : ''}${augure.name}</strong>
             <small>${augure.text}</small><button class="primary" data-augure="${card.id}">Choisir</button></li>`;
         }).join('')}</ul>
       </section>`;
   } else if (state.phase === 'shop') {
     const packId = offeredPack(state);
     const pack = packs[packId];
+    const eclipse = eclipseOffer(state);
     content = `
       <section class="shop">
         <header class="shop-header">
           <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits${state.goldReward ? ' (dont ' + state.goldReward + ' Ducat)' : ''}</p></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
-        ${pack ? `<div class="pack-shelf" aria-label="Pochettes">
-          <button data-pack="${packId}" ${state.credits < pack.price ? 'disabled' : ''}>
-            ${pack.name} · ${pack.price} cr.</button></div>` : ''}
+        ${pack || eclipse ? `<div class="pack-shelf" aria-label="Pochettes">
+          ${pack ? `<button data-pack="${packId}" ${state.credits < pack.price ? 'disabled' : ''}>
+            ${pack.name} · ${pack.price} cr.</button>` : ''}
+          ${eclipse ? `<button data-action="open-eclipse" ${state.credits < ECLIPSE_PRICE ? 'disabled' : ''}>
+            Pack des Éclipses · ${ECLIPSE_PRICE} cr.</button>` : ''}</div>` : ''}
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
-          const full = state.owned.length === 3;
+          const full = jokerSlotsUsed(state) >= 3;
           return `<li class="${joker.theme || ''}"><span class="mark" aria-hidden="true">${joker.mark}</span>
           <div><strong>${joker.name}</strong><small>${joker.text}</small></div>
           <button data-buy="${id}" aria-label="Acheter ${joker.name} pour ${joker.price} crédits"
           ${full || state.credits < joker.price ? 'disabled' : ''}>${joker.price} cr.</button></li>`;
         }).join('')}</ul>
-        ${state.owned.length === 3 ? '<p>Vos trois emplacements sont occupés.</p>' : ''}
+        ${jokerSlotsUsed(state) >= 3 ? '<p>Vos trois emplacements sont occupés.</p>' : ''}
       </section>`;
   } else {
     content = `
       <section class="finish">
         <h3 tabindex="-1">${state.phase === 'win' ? 'Victoire !' : 'Fin de partie'}</h3>
-        <p>${state.phase === 'win' ? (state.legacy ? 'Vous avez franchi les six blindes.' : 'Vous avez terminé la huitième mise.') : 'Vous avez épuisé vos mains avant d’atteindre l’objectif.'}</p>
+        <p>${state.phase === 'win' ? (state.legacy ? 'Vous avez franchi les six blindes.' : 'Vous avez terminé la huitième mise.') : 'Vous avez épuisé vos mains ou vos cartes avant d’atteindre l’objectif.'}</p>
         ${state.phase === 'win' && !state.legacy ?
           '<button class="primary" data-action="endless">Continuer en mode infini</button>' : ''}
         <button data-action="restart">Nouvelle partie</button>
@@ -168,7 +198,7 @@ function render(focus, scored = false) {
       </div>
     </section>
     ${content}
-    <section class="loadout"><h3>Jokers <span>${state.owned.length}/3</span></h3>
+    <section class="loadout"><h3>Jokers <span>${jokerSlotsUsed(state)}/3</span></h3>
       ${loadout ? '<ul>' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</section>`;
   if (focus) game.querySelector(focus)?.focus();
 }
@@ -177,6 +207,16 @@ game.addEventListener('click', event => {
   const target = event.target.closest('button');
   if (!target) return;
   const { card, action } = target.dataset;
+  if (target.dataset.prune) {
+    const id = target.dataset.prune;
+    if (selected.has(id)) selected.delete(id);
+    else if (selected.size < removableCount(state)) selected.add(id);
+    const list = target.closest('.prune-cards');
+    const scroll = list.scrollTop;
+    render('[data-prune="' + id + '"]');
+    game.querySelector('.prune-cards').scrollTop = scroll;
+    return;
+  }
   if (card) {
     if (selected.has(card)) selected.delete(card);
     else if (selected.size < 5) selected.add(card);
@@ -216,6 +256,11 @@ game.addEventListener('click', event => {
   else if (target.dataset.pack !== undefined) next = openPack(state, Number(target.dataset.pack));
   else if (target.dataset.augure !== undefined) next = chooseAugure(state, target.dataset.augure);
   else if (action === 'skip-pack') next = chooseAugure(state, null);
+  else if (action === 'back-prune') next = pruneDeck(state, null);
+  else if (action === 'confirm-prune') next = pruneDeck(state, [...selected]);
+  else if (action === 'open-eclipse') next = openEclipse(state);
+  else if (action === 'skip-eclipse') next = chooseEclipse(state, null);
+  else if (target.dataset.eclipse !== undefined) next = chooseEclipse(state, target.dataset.eclipse);
   else if (action === 'advance') next = advance(state);
   else if (action === 'endless') next = continueRun(state);
   else if (action === 'restart') {

@@ -411,3 +411,21 @@ body:has(.table:not([hidden])) {
 .card.gold { background: linear-gradient(145deg, #fff1b1, #dfac51, #fbe098); }
 .card.bonus { background: linear-gradient(145deg, #fff1d1, #bddac7, #e6ecd1); }
 .card.wild { background: linear-gradient(145deg, #f5e4b0, #c9b5df, #b5dfd0); }
+.shop-header h3 { color: var(--gold); font-size: 1.25rem; }
+.pack-shelf button { background: linear-gradient(135deg, #71526d, #443354); }
+.shop .offers li { min-height: 98px; align-content: space-between; }
+.shop .eclipse-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.negative-joker { outline: 1px solid #c78fe8; outline-offset: -3px; }
+.prune-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 4px;
+  max-height: 47dvh;
+  margin-top: 8px;
+  overflow: auto;
+}
+.prune-cards button[aria-pressed="true"] { background: #ffd278; color: #281638; }
+@media (orientation: landscape) {
+  #game:has(.shop) { min-height: min(90dvh, 420px); grid-template-rows: auto 1fr; }
+  .shop { align-self: stretch; border-color: #b98868; background: linear-gradient(145deg, #30394c, #212433); }
+}

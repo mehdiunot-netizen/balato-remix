@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, blindFor, blinds, buy, chooseAugure, continueRun, deck, evaluate, jokers, offeredPack, openPack, packs, previewHand, restoreRun, start, useCards } from './game.mjs';
+import { advance, blindFor, blinds, buy, chooseAugure, chooseEclipse, continueRun, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, start, useCards } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -144,9 +144,9 @@ test('les nouveaux jokers utilisent les cartes gardées et le numéro de main da
   assert.deepEqual(scored, preview);
   assert.deepEqual(steps, [
     { type: 'base', chips: 15, mult: 2, cardChips: 20 },
-    { type: 'add', id: owned[0], chips: 0, mult: 4 },
-    { type: 'add', id: owned[1], chips: 35, mult: 0 },
-    { type: 'factor', id: owned[2], factor: 1.75 },
+    { type: 'add', id: owned[0], slot: 0, chips: 0, mult: 4 },
+    { type: 'add', id: owned[1], slot: 1, chips: 35, mult: 0 },
+    { type: 'factor', id: owned[2], slot: 2, factor: 1.75 },
   ]);
   assert.equal(previewHand({ ...state, plays: 3 }, played).mult, 6);
   assert.equal(restoreRun({ ...state, catalogSize: undefined }).catalogSize, 7);
@@ -171,7 +171,7 @@ test('une pochette tirée par la seed survit à un rechargement et transforme un
     new Set([0, 1]));
   assert.equal(advance(opened), opened);
   const saved = restoreRun(JSON.parse(JSON.stringify(opened)));
-  const choice = saved.choices[0];
+  const choice = saved.choices.find(card => card.augure !== 'prune');
   const resolved = chooseAugure(saved, choice.id);
   assert.equal(openPack(resolved, id), resolved);
   const next = advance(resolved);
@@ -210,4 +210,59 @@ test('Ducat rapporte uniquement quand la carte est gardée sur la main gagnante'
   assert.equal(won.phase, 'shop');
   assert.equal(won.goldReward, 3);
   assert.equal(won.credits - state.credits, 10);
+});
+
+test('Fil coupé retire de une à cinq cartes, qui ne reviennent pas à la distribution', () => {
+  const state = { ...start('fil-coupe'), phase: 'pack', choices: [{ id: 'prune', augure: 'prune' }] };
+  const picking = chooseAugure(state, 'prune');
+  assert.equal(pruneDeck(picking, null).phase, 'pack');
+  assert.equal(pruneDeck(picking, []), picking);
+  const ids = deck.slice(0, 6).map(card => card.id);
+  assert.equal(pruneDeck(picking, ids), picking);
+  const removed = ids.slice(0, 5);
+  const result = pruneDeck(picking, removed);
+  assert.deepEqual(result.removed, removed);
+  const next = advance(result);
+  assert.ok([...next.hand, ...next.pile].every(card => !removed.includes(card.id)));
+  assert.deepEqual(next, advance(restoreRun(JSON.parse(JSON.stringify(result)))));
+  assert.equal(pruneDeck(picking, removed.slice(0, 1)).removed.length, 1);
+});
+
+test('les Éclipses conservent les jokers et la main, et la copie utilise une place normale', () => {
+  const base = { ...start('eclipse'), phase: 'shop', credits: 10, owned: [0, 1], negativeSlots: [0] };
+  const seed = Array.from({ length: 32 }, (_, i) => String(i)).find(seed => eclipseOffer({ ...base, seed }));
+  const shop = { ...base, seed };
+  const pack = openEclipse(shop);
+  assert.equal(pack.credits, 5);
+  assert.deepEqual(pack, openEclipse(shop));
+  const negative = chooseEclipse(pack, 'negative');
+  assert.deepEqual(negative.owned, base.owned);
+  assert.equal(jokerSlotsUsed(negative), 0);
+  assert.equal(advance(negative).hand.length, 8);
+  const copy = chooseEclipse({ ...pack, eclipse: { ...pack.eclipse, copy: 0 } }, 'copy');
+  assert.deepEqual(copy.owned, [0, 1, 0]);
+  assert.deepEqual(copy.negativeSlots, [0]);
+  assert.equal(jokerSlotsUsed(copy), 2);
+  assert.equal(openEclipse(copy), copy);
+});
+
+test('une seed fixe la blinde dès la distribution et le paquet réduit peut avoir une cible réalisable', () => {
+  const opening = start('fixe');
+  assert.equal(start('fixe').target, opening.target);
+  const removed = deck.slice(0, 44).map(card => card.id);
+  let state = advance({ ...opening, phase: 'shop', round: 300, endless: true, removed });
+  const target = state.target;
+  assert.ok(target > 0);
+  while (state.phase === 'play') {
+    let best = { cards: [], total: 0 };
+    for (let mask = 1; mask < 2 ** state.hand.length; mask++) {
+      const cards = state.hand.filter((_, index) => (mask >> index) & 1);
+      if (cards.length > 5) continue;
+      const { total } = previewHand(state, cards);
+      if (total > best.total) best = { cards, total };
+    }
+    state = useCards(state, best.cards.map(card => card.id), 'play');
+    assert.equal(state.target, target);
+  }
+  assert.equal(state.phase, 'shop');
 });
