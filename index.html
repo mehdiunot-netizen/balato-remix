@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#122526">
+  <meta name="apple-mobile-web-app-title" content="Contre-Pli">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./emblem.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./touch.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>Contre-Pli</title>
+</head>
+<body>
+  <main class="table">
+    <header class="masthead">
+      <div class="brand"><img src="./emblem.svg" alt="" width="44" height="44"><h1>Contre-Pli</h1></div>
+      <span class="wallet" id="wallet"></span>
+    </header>
+    <div id="game"></div>
+    <p id="announcement" class="sr-only" role="status"></p>
+    <details class="rules">
+      <summary>Règles du jeu</summary>
+      <p>Franchissez six blindes. À chaque blinde, vous avez quatre mains et trois défausses.</p>
+      <p>Touchez jusqu’à cinq cartes. Jouez la combinaison pour marquer, ou défaussez ces cartes pour en piocher d’autres. Seules les cartes qui forment la combinaison ajoutent leurs jetons. Le score de la main est égal aux jetons multipliés par le multiplicateur.</p>
+      <p>De la plus faible à la plus forte : carte haute, paire, double paire, brelan, quinte, couleur, full, carré, quinte flush. L’as vaut aussi 1 dans A–2–3–4–5.</p>
+      <p>Chaque blinde réussie rapporte quatre crédits, plus un par main restante. La boutique propose des jokers qui bonifient vos prochaines mains. Vous pouvez en garder trois.</p>
+    </details>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>
