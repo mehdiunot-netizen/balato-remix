@@ -1,9 +1,10 @@
-import { advance, blinds, buy, evaluate, jokers, start, useCards } from './game.mjs';
+import { advance, blindFor, buy, continueRun, evaluate, jokers, restoreRun, start, useCards } from './game.mjs?v=4';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
 const storageKey = 'contre-pli-v1';
 const names = { '♠': 'pique', '♥': 'cœur', '♣': 'trèfle', '♦': 'carreau' };
+const scoreFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 });
 const faces = { 11: 'V', 12: 'D', 13: 'R', 14: 'A' };
 let state = restore();
 const selected = new Set();
@@ -11,11 +12,28 @@ const table = document.querySelector('.table');
 const lobby = document.querySelector('.lobby');
 const enter = document.querySelector('#enter');
 const rules = document.querySelector('#rules');
-if (state.last || state.discards < 3 || state.round) enter.textContent = 'Reprendre';
+const newRun = document.querySelector('#new-run');
+const seedInput = document.querySelector('#seed');
+if (state) {
+  newRun.hidden = false;
+  enter.textContent = 'Reprendre';
+} else {
+  seedInput.hidden = false;
+}
+newRun.addEventListener('click', () => {
+  seedInput.hidden = false;
+  newRun.hidden = true;
+  enter.textContent = 'Jouer';
+  seedInput.querySelector('input').focus();
+});
 enter.addEventListener('click', () => {
+  if (!state || !seedInput.hidden) {
+    state = start(seedInput.querySelector('input').value.trim() || undefined);
+  }
+  persist();
   lobby.hidden = true;
   table.hidden = false;
-  game.querySelector('#blind-name').focus();
+  render('#blind-name');
 });
 
 const court = { 11: ['◆', 'Valet'], 12: ['✦', 'Dame'], 13: ['♜', 'Roi'] };
@@ -29,19 +47,35 @@ function cardArt(card) {
 function restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (saved?.version === 1) return saved.state;
+    if (saved?.version === 1 && saved.state?.hand && blindFor({
+      ...saved.state, legacy: saved.state.legacy ?? !saved.state.seed,
+    })) {
+      return restoreRun(saved.state);
+    }
   } catch {
     // The current session remains playable when storage is unavailable.
   }
-  return start();
+  return null;
+}
+
+function save(value) {
+  localStorage.setItem(storageKey, JSON.stringify({ version: 1, state: value }));
+}
+
+function persist() {
+  try {
+    save(state);
+  } catch {
+    // Storage failures do not interrupt play.
+  }
 }
 
 function render(focus, scored = false) {
-  const blind = blinds[state.round];
+  const blind = blindFor(state);
   const loadout = state.owned.map(id => {
-    const { mark, name, text } = jokers[id];
-    return '<li><details><summary><strong><span class="joker-icon" aria-hidden="true">' + mark + '</span> ' + name +
-      '</strong></summary><small>' + text + '</small></details></li>';
+    const { mark, name, text, theme } = jokers[id];
+    return `<li class="${theme || ''}"><details><summary><strong><span class="joker-icon" aria-hidden="true">${mark}</span>
+      ${name}</strong></summary><small>${text}</small></details></li>`;
   }).join('');
 
   let content;
@@ -62,7 +96,7 @@ function render(focus, scored = false) {
           </button>`;
         }).join('')}</div>
         <div class="preview" aria-live="polite">${preview ?
-          `<strong>${preview.name}</strong><span class="equation"><span class="chips">${preview.chips} jetons</span> × <span class="mult">${preview.mult}</span> = <b>${preview.total}</b></span>` :
+          `<strong>${preview.name}</strong><span class="equation"><span class="chips">${preview.chips} jetons</span> × <span class="mult">${scoreFormat.format(preview.mult)}</span> ${Number.isInteger(preview.mult) ? '=' : '≈'} <b>${preview.total}</b></span>` :
           '<span>Sélectionnez de 1 à 5 cartes.</span>'}</div>
         <div class="actions">
           <button class="primary" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
@@ -77,7 +111,7 @@ function render(focus, scored = false) {
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
           const full = state.owned.length === 3;
-          return `<li><span class="mark" aria-hidden="true">${joker.mark}</span>
+          return `<li class="${joker.theme || ''}"><span class="mark" aria-hidden="true">${joker.mark}</span>
           <div><strong>${joker.name}</strong><small>${joker.text}</small></div>
           <button data-buy="${id}" aria-label="Acheter ${joker.name} pour ${joker.price} crédits"
           ${full || state.credits < joker.price ? 'disabled' : ''}>${joker.price} cr.</button></li>`;
@@ -89,15 +123,18 @@ function render(focus, scored = false) {
     content = `
       <section class="finish">
         <h3 tabindex="-1">${state.phase === 'win' ? 'Victoire !' : 'Fin de partie'}</h3>
-        <p>${state.phase === 'win' ? 'Vous avez franchi les six blindes.' : 'Vous avez épuisé vos mains avant d’atteindre l’objectif.'}</p>
-        <button class="primary" data-action="restart">Nouvelle partie</button>
+        <p>${state.phase === 'win' ? (state.legacy ? 'Vous avez franchi les six blindes.' : 'Vous avez terminé la huitième mise.') : 'Vous avez épuisé vos mains avant d’atteindre l’objectif.'}</p>
+        ${state.phase === 'win' && !state.legacy ?
+          '<button class="primary" data-action="endless">Continuer en mode infini</button>' : ''}
+        <button data-action="restart">Nouvelle partie</button>
       </section>`;
   }
 
   game.innerHTML = `
     <section class="blind" aria-labelledby="blind-name">
-      <span class="eyebrow">Blinde ${state.round + 1} / ${blinds.length}</span>
+      <span class="eyebrow">${state.legacy ? 'Blinde ' + (state.round + 1) + ' / 6' : state.endless ? 'Infini · Mise ' + blind.ante : 'Mise ' + blind.ante + ' / 8' }</span>
       <h2 id="blind-name" tabindex="-1">${blind.name}</h2>
+      ${blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
       <div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
       <progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>
       ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
@@ -124,6 +161,7 @@ game.addEventListener('click', event => {
   }
 
   if (action === 'rules') {
+    document.querySelector('#current-seed').textContent = state.seed;
     rules.showModal();
     return;
   }
@@ -131,21 +169,26 @@ game.addEventListener('click', event => {
   let next = state;
   if (target.dataset.buy !== undefined) next = buy(state, Number(target.dataset.buy));
   else if (action === 'advance') next = advance(state);
-  else if (action === 'restart') next = start();
+  else if (action === 'endless') next = continueRun(state);
+  else if (action === 'restart') {
+    selected.clear();
+    lobby.hidden = false;
+    table.hidden = true;
+    seedInput.hidden = false;
+    newRun.hidden = true;
+    enter.textContent = 'Jouer';
+    seedInput.querySelector('input').focus();
+    return;
+  }
   else if (action === 'play' || action === 'discard') next = useCards(state, [...selected], action);
   if (next === state) return;
   state = next;
   selected.clear();
-  try {
-    localStorage.setItem(storageKey, JSON.stringify({ version: 1, state }));
-  } catch {
-    // Storage failures do not interrupt play.
-  }
+  persist();
   render(state.phase === 'play' ? '#blind-name' : 'h3[tabindex="-1"]', action === 'play');
   if (action === 'play') announcement.textContent = state.last.name + ', +' + state.last.total + ' points.';
   else if (action === 'discard') announcement.textContent = 'Cartes remplacées.';
   else if (target.dataset.buy !== undefined) announcement.textContent = 'Joker équipé.';
 });
 
-render();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});

@@ -308,3 +308,52 @@ dialog.rules {
 }
 dialog.rules::backdrop { background: #100925d9; }
 dialog.rules p { margin-bottom: 10px; }
+
+#seed {
+  display: grid;
+  gap: 5px;
+  width: min(230px, 95%);
+  margin: 0 auto 9px;
+  color: var(--muted);
+  text-align: left;
+}
+#seed input {
+  min-height: 44px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #211436;
+  color: inherit;
+  font: inherit;
+  font-size: max(16px, 1rem);
+}
+.boss-rule { color: var(--gold); font-size: .85rem; }
+#current-seed { overflow-wrap: anywhere; }
+.orbit .mark, .orbit .joker-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 36px;
+  border: 2px solid #ffe0a1;
+  border-radius: 5px;
+  background:
+    radial-gradient(circle at 77% 20%, #fff1ae 0 1px, transparent 2px),
+    radial-gradient(circle at 19% 71%, #f191be 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 35%, #56388a, #231130 75%);
+  box-shadow: inset 0 0 0 1px #4d2d68, 0 2px #180f2d;
+  color: #fae7a5;
+  font: bold 1.25rem Georgia, serif;
+  text-shadow: 1px 1px #af537b;
+  vertical-align: middle;
+}
+.orbit .mark::after, .orbit .joker-icon::after {
+  content: "";
+  position: absolute;
+  inset: 8px 2px;
+  border: 1px solid #71d6da;
+  border-radius: 50%;
+  transform: rotate(-36deg);
+  pointer-events: none;
+}

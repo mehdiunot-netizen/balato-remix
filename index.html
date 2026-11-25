@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./emblem.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./touch.png">
-  <link rel="stylesheet" href="./style.css?v=3">
+  <link rel="stylesheet" href="./style.css?v=4">
   <title>Contre-Pli</title>
 </head>
 <body>
@@ -27,7 +27,11 @@
       </div>
       <p class="lobby-kicker">Poker solo</p>
       <h1 id="lobby-title">Contre<span>‑</span>Pli</h1>
+      <label id="seed" hidden>Seed (facultative)
+        <input type="text" maxlength="64" autocapitalize="off" autocomplete="off" spellcheck="false">
+      </label>
       <button class="primary" id="enter">Jouer</button>
+      <button id="new-run" hidden>Nouvelle partie</button>
     </div>
   </section>
   <main class="table" hidden>
@@ -36,12 +40,13 @@
   </main>
   <dialog class="rules" id="rules" aria-labelledby="rules-title">
     <h2 id="rules-title">Règles du jeu</h2>
-      <p>Franchissez six blindes. À chaque blinde, vous avez quatre mains et trois défausses.</p>
+      <p>Franchissez huit mises, chacune avec une petite blinde, une grosse blinde et un boss. Vous commencez chaque blinde avec quatre mains et trois défausses, sauf contrainte de boss.</p>
       <p>Touchez jusqu’à cinq cartes. Jouez la combinaison pour marquer, ou défaussez ces cartes pour en piocher d’autres. Seules les cartes qui forment la combinaison ajoutent leurs jetons. Le score de la main est égal aux jetons multipliés par le multiplicateur.</p>
       <p>De la plus faible à la plus forte : carte haute, paire, double paire, brelan, quinte, couleur, full, carré, quinte flush. L’as vaut aussi 1 dans A–2–3–4–5.</p>
       <p>Chaque blinde réussie rapporte quatre crédits, plus un par main restante. La boutique propose des jokers qui bonifient vos prochaines mains. Vous pouvez en garder trois.</p>
+    <p>Seed de la partie <code id="current-seed"></code></p>
     <form method="dialog"><button class="primary">Retour</button></form>
   </dialog>
-  <script type="module" src="./app.mjs?v=3"></script>
+  <script type="module" src="./app.mjs?v=4"></script>
 </body>
 </html>

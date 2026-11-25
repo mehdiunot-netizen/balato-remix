@@ -14,7 +14,7 @@ Ouvrez http://localhost:3000. Sur iPhone, ouvrez l’adresse HTTPS de votre héb
 
 ## Objectif
 
-Franchissez six blindes. Vous piochez huit cartes et disposez de quatre mains et trois défausses par blinde. Touchez une à cinq cartes pour voir la combinaison et son score avant de la jouer. Entre deux blindes, dépensez vos crédits à la boutique pour équiper jusqu’à trois jokers.
+Franchissez huit mises de trois blindes pour gagner, puis poursuivez la même partie en mode infini. Chaque boss applique une contrainte. À chaque blinde, l’objectif tient compte d’une séquence jouable avec la pioche de la seed et les jokers en main. Saisissez une seed avant de jouer pour reproduire la pioche et la boutique en répétant vos décisions. Vous piochez huit cartes et disposez de quatre mains et trois défausses par blinde. Touchez une à cinq cartes pour voir la combinaison et son score avant de la jouer. Entre deux blindes, dépensez vos crédits à la boutique pour équiper jusqu’à trois jokers.
 
 ## Tests
 
