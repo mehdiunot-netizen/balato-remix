@@ -1,4 +1,4 @@
-import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=13';
+import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=14';
 export { jokers };
 
 const suits = ['♠', '♥', '♣', '♦'];
@@ -227,6 +227,19 @@ export function useCards(state, ids, action) {
   next.pile = state.pile.slice(cards.length);
   next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(state.pile.slice(0, cards.length));
   return next.hand.length ? next : { ...next, phase: 'lose' };
+}
+
+// A sale can only happen in the shop. Remap negative-slot indices on deletion.
+export function sellJoker(state, slot) {
+  if (state.phase !== 'shop' || !Number.isInteger(slot) ||
+      slot < 0 || slot >= state.owned.length) return state;
+  const id = state.owned[slot];
+  const value = Math.max(1, Math.floor(jokers[id].price / 2));
+  return { ...state, credits: state.credits + value,
+    owned: state.owned.filter((_, index) => index !== slot),
+    negativeSlots: (state.negativeSlots ?? [])
+      .filter(index => index !== slot)
+      .map(index => index > slot ? index - 1 : index) };
 }
 
 export function buy(state, id) {
