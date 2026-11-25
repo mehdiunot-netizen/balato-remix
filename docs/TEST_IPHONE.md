@@ -31,3 +31,13 @@ Renseigner pour chaque anomalie : l'étape, ce qui s'affiche, les boutons non fo
 ## Sécurité de développement
 
 Aucune fusion de la pull request #1 tant que le test réel n'est pas validé. Conserver `main` intacte, les sauvegardes au format `contre-pli-v1`, et inscrire les anomalies dans `docs/REPRISE.md`.
+
+## Nouveau geste de vente v15
+
+- [ ] Depuis la boutique, toucher un joker équipé, le faire glisser ; le carré « VENDRE » apparaît au bas de l'écran avec le prix.
+- [ ] Relâcher en dehors du carré : **aucune vente**, aucun changement d'argent ou de jokers.
+- [ ] Relâcher le joker sur le carré : vendre exactement le joker déplacé, créditer le bon montant et libérer un emplacement.
+- [ ] Faire glisser un joker puis interrompre le geste : vérifier qu'aucune vente n'est déclenchée.
+- [ ] Toucher simplement un joker : ses détails peuvent encore s'ouvrir, sans vente.
+- [ ] Vérifier aussi la vente d'un joker négatif, les emplacements restants et la persistance après rechargement.
+- [ ] Vérifier les gestes en paysage sur un véritable iPhone 11 ; les tests automatiques du moteur ne remplacent pas ce contrôle.
