@@ -1,4 +1,4 @@
-import { advance, augures, blindFor, buy, chooseAugure, chooseEclipse, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, start, useCards } from './game.mjs?v=13';
+import { advance, augures, blindFor, buy, chooseAugure, chooseEclipse, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, start, useCards } from './game.mjs?v=14';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -93,7 +93,7 @@ function render(focus, scored = false) {
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
     return `<li class="${pulse ? 'triggered' : ''}${negative ? ' negative-joker' : ''}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong>${emblem(id, mark)}
-      ${name}${negative ? ' · Négatif' : ''}</strong></summary><small>${text}</small></details></li>`;
+      ${name}${negative ? ' · Négatif' : ''}</strong></summary><small>${text}</small>${state.phase === "shop" ? `<button type="button" class="sell-joker" data-sell="${index}" aria-label="Vendre ${name} pour ${Math.max(1, Math.floor(jokers[id].price / 2))} crédits">Vendre · +${Math.max(1, Math.floor(jokers[id].price / 2))} cr.</button>` : ""}</details></li>`;
   }).join('');
 
   let content;
@@ -264,7 +264,8 @@ game.addEventListener('click', event => {
   }
 
   let next = state;
-  if (target.dataset.buy !== undefined) next = buy(state, Number(target.dataset.buy));
+  if (target.dataset.sell !== undefined) next = sellJoker(state, Number(target.dataset.sell));
+  else if (target.dataset.buy !== undefined) next = buy(state, Number(target.dataset.buy));
   else if (target.dataset.pack !== undefined) next = openPack(state, Number(target.dataset.pack));
   else if (target.dataset.augure !== undefined) next = chooseAugure(state, target.dataset.augure);
   else if (action === 'skip-pack') next = chooseAugure(state, null);
@@ -292,6 +293,7 @@ game.addEventListener('click', event => {
   if (action === 'play') announcement.textContent = state.last.name + ', +' + state.last.total + ' points.';
   else if (action === 'discard') announcement.textContent = 'Cartes remplacées.';
   else if (target.dataset.buy !== undefined) announcement.textContent = 'Joker équipé.';
+  else if (target.dataset.sell !== undefined) announcement.textContent = 'Joker vendu.';
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
