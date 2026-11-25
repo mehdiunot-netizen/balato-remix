@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, blindFor, blinds, buy, chooseAugure, chooseEclipse, continueRun, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, start, useCards } from './game.mjs';
+import { advance, blindFor, blinds, buy, chooseAugure, chooseEclipse, continueRun, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -270,4 +270,27 @@ test('une seed fixe la blinde dès la distribution et le paquet réduit peut avo
 test('les trois types de blinde partent du même barème de mise', () => {
   assert.deepEqual(blinds.slice(0, 3).map(blind => blind.target), [300, 450, 600]);
   assert.ok(start('limite').target <= 300);
+});
+
+test('vente en boutique, slots négatifs, copie et sauvegardes', () => {
+  const shop = { ...start('vente'), phase: 'shop', owned: [0,1,2],
+    negativeSlots: [1], credits: 0, offers: [3] };
+  const sold = sellJoker(shop,0);
+  assert.deepEqual(sold.owned,[1,2]);
+  assert.deepEqual(sold.negativeSlots,[0]);
+  assert.equal(sold.credits,2);
+  assert.equal(jokerSlotsUsed(sold),1);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(sold))),sold);
+  const bought = buy({...sold,credits:10},3);
+  assert.deepEqual(bought.owned,[1,2,3]);
+  assert.equal(jokerSlotsUsed(bought),2);
+  const negativeSold = sellJoker(shop,1);
+  assert.deepEqual(negativeSold.negativeSlots,[]);
+  assert.equal(jokerSlotsUsed(negativeSold),2);
+  assert.equal(sellJoker(shop,-1),shop);
+  assert.equal(sellJoker(shop,3),shop);
+  assert.equal(sellJoker(shop,1.5),shop);
+  const playing={...shop,phase:'play'};
+  assert.equal(sellJoker(playing,0),playing);
+  assert.deepEqual(sellJoker({...shop,owned:[0,0],negativeSlots:[0]},0).negativeSlots,[]);
 });
