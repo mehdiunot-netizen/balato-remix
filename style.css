@@ -626,3 +626,93 @@ button:where(:not(.card)):active:not(:disabled) { filter: brightness(1.12); }
 @media (orientation: landscape) and (max-height: 360px) {
   .sell-joker { min-height: 34px; font-size: .72rem; }
 }
+
+
+/* v15 — Touch-first joker cards: drag to the temporary sell square. */
+.draggable-joker {
+  position: relative;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  border: 2px solid #c5a475;
+  background: radial-gradient(ellipse at 40% 20%, #69887544, transparent 70%),
+    repeating-linear-gradient(45deg, #ffe4ac0c 0 1px, transparent 1px 7px),
+    linear-gradient(145deg, #4e5861, #26344b);
+  box-shadow: inset 0 0 0 2px #ddbc8352, 0 3px #14252c;
+}
+.draggable-joker:active { cursor: grabbing; }
+.draggable-joker summary { display: grid; place-items: center; gap: 2px; }
+.draggable-joker summary strong { display: grid !important; place-items: center; gap: 1px; font-size: .85rem; }
+.draggable-joker .card-emblem { width: 35px; height: 35px; }
+.drag-hint {
+  display: block;
+  margin-top: 2px;
+  color: #f9dca8;
+  font-size: .66rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .025em;
+}
+.sell-drop-zone {
+  position: fixed;
+  z-index: 120;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: clamp(135px, 23vw, 185px);
+  height: clamp(75px, 24dvh, 106px);
+  display: grid;
+  place-content: center;
+  gap: 5px;
+  text-align: center;
+  border: 3px dashed #ffce73;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #6c3842f0, #281b32f5);
+  box-shadow: 0 0 0 3px #21182999, 0 10px 25px #0b142aaa;
+  color: #fff2c9;
+  pointer-events: none;
+}
+.sell-drop-zone strong { font: 900 clamp(1rem, 3vw, 1.3rem)/1 Georgia, serif; letter-spacing: .08em; }
+.sell-drop-zone small { color: #f8dec0; font-size: .74rem; }
+.sell-drop-zone.is-over {
+  border-style: solid;
+  border-color: #fff3bc;
+  background: linear-gradient(145deg, #a34d46, #694039);
+  box-shadow: 0 0 0 5px #f5ce846b, 0 0 24px #ffce738c;
+}
+.joker-drag-ghost {
+  position: fixed;
+  z-index: 121;
+  pointer-events: none;
+  width: 118px;
+  min-height: 112px;
+  padding: 11px 7px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  font: 800 .86rem/1.2 Georgia, serif;
+  color: #fff0c1;
+  background: linear-gradient(155deg, #5b5771, #263949);
+  border: 3px solid #e6bf7d;
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 2px #b3956f, 0 12px 25px #0e152fa3;
+  transform: translate(-50%, -65%) rotate(4deg);
+}
+.joker-drag-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #fae3b4;
+  border-radius: 6px;
+  background: linear-gradient(145deg, #746583, #34545a);
+  font-size: 1.65rem;
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  .draggable-joker .card-emblem { width: 26px; height: 26px; }
+  .drag-hint { font-size: .58rem; }
+  .sell-drop-zone { height: 75px; width: 140px; }
+  .joker-drag-ghost { width: 95px; min-height: 90px; }
+}
