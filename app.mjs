@@ -1,4 +1,4 @@
-import { advance, blindFor, buy, continueRun, evaluate, jokers, restoreRun, start, useCards } from './game.mjs?v=4';
+import { advance, blindFor, buy, continueRun, evaluate, jokers, restoreRun, start, useCards } from './game.mjs?v=5';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -12,28 +12,29 @@ const table = document.querySelector('.table');
 const lobby = document.querySelector('.lobby');
 const enter = document.querySelector('#enter');
 const rules = document.querySelector('#rules');
-const newRun = document.querySelector('#new-run');
-const seedInput = document.querySelector('#seed');
-if (state) {
-  newRun.hidden = false;
-  enter.textContent = 'Reprendre';
-} else {
-  seedInput.hidden = false;
-}
-newRun.addEventListener('click', () => {
-  seedInput.hidden = false;
-  newRun.hidden = true;
-  enter.textContent = 'Jouer';
-  seedInput.querySelector('input').focus();
-});
-enter.addEventListener('click', () => {
-  if (!state || !seedInput.hidden) {
-    state = start(seedInput.querySelector('input').value.trim() || undefined);
-  }
+const seedDialog = document.querySelector('#seed-dialog');
+const seedInput = document.querySelector('#seed input');
+if (state) enter.textContent = 'Reprendre';
+
+function showTable() {
+  enter.textContent = "Reprendre";
   persist();
   lobby.hidden = true;
   table.hidden = false;
   render('#blind-name');
+}
+
+document.querySelector('#new-run').addEventListener('click', () => seedDialog.showModal());
+document.querySelector('#cancel-seed').addEventListener('click', () => seedDialog.close());
+document.querySelector('#seed-form').addEventListener('submit', event => {
+  event.preventDefault();
+  state = start(seedInput.value.trim() || undefined);
+  seedDialog.close();
+  showTable();
+});
+enter.addEventListener('click', () => {
+  state ??= start();
+  showTable();
 });
 
 const court = { 11: ['◆', 'Valet'], 12: ['✦', 'Dame'], 13: ['♜', 'Roi'] };
@@ -106,8 +107,10 @@ function render(focus, scored = false) {
   } else if (state.phase === 'shop') {
     content = `
       <section class="shop">
-        <h3 tabindex="-1">Boutique</h3>
-        <p>Blinde franchie · +${state.reward} crédits</p>
+        <header class="shop-header">
+          <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits</p></div>
+          <button class="primary" data-action="advance">Blinde suivante</button>
+        </header>
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
           const full = state.owned.length === 3;
@@ -117,7 +120,6 @@ function render(focus, scored = false) {
           ${full || state.credits < joker.price ? 'disabled' : ''}>${joker.price} cr.</button></li>`;
         }).join('')}</ul>
         ${state.owned.length === 3 ? '<p>Vos trois emplacements sont occupés.</p>' : ''}
-        <button class="primary" data-action="advance">Blinde suivante</button>
       </section>`;
   } else {
     content = `
@@ -174,10 +176,8 @@ game.addEventListener('click', event => {
     selected.clear();
     lobby.hidden = false;
     table.hidden = true;
-    seedInput.hidden = false;
-    newRun.hidden = true;
-    enter.textContent = 'Jouer';
-    seedInput.querySelector('input').focus();
+    seedInput.value = '';
+    seedDialog.showModal();
     return;
   }
   else if (action === 'play' || action === 'discard') next = useCards(state, [...selected], action);

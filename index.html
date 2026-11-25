@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./emblem.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./touch.png">
-  <link rel="stylesheet" href="./style.css?v=4">
+  <link rel="stylesheet" href="./style.css?v=5">
   <title>Contre-Pli</title>
 </head>
 <body>
@@ -22,22 +22,32 @@
   </section>
   <section class="lobby" aria-labelledby="lobby-title">
     <div class="lobby-inner">
-      <div class="lobby-cards" aria-hidden="true">
-        <span>♣</span><span>✦</span><span>♥</span>
+      <div class="lobby-brand">
+        <img src="./emblem.svg" alt="" width="72" height="72">
+        <h1 id="lobby-title">Contre<span>‑</span>Pli</h1>
       </div>
-      <p class="lobby-kicker">Poker solo</p>
-      <h1 id="lobby-title">Contre<span>‑</span>Pli</h1>
-      <label id="seed" hidden>Seed (facultative)
-        <input type="text" maxlength="64" autocapitalize="off" autocomplete="off" spellcheck="false">
-      </label>
-      <button class="primary" id="enter">Jouer</button>
-      <button id="new-run" hidden>Nouvelle partie</button>
+      <nav class="lobby-actions" aria-label="Menu principal">
+        <button class="primary" id="enter">Jouer</button>
+        <button id="new-run" aria-haspopup="dialog">Seed</button>
+      </nav>
     </div>
   </section>
   <main class="table" hidden>
     <div id="game"></div>
     <p id="announcement" class="sr-only" role="status"></p>
   </main>
+  <dialog class="rules seed-dialog" id="seed-dialog" aria-labelledby="seed-title">
+    <form id="seed-form">
+      <h2 id="seed-title">Nouvelle partie</h2>
+      <label id="seed">Seed (facultative)
+        <input type="text" maxlength="64" autocapitalize="off" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="seed-actions">
+        <button type="button" id="cancel-seed">Retour</button>
+        <button class="primary" type="submit">Jouer</button>
+      </div>
+    </form>
+  </dialog>
   <dialog class="rules" id="rules" aria-labelledby="rules-title">
     <h2 id="rules-title">Règles du jeu</h2>
       <p>Franchissez huit mises, chacune avec une petite blinde, une grosse blinde et un boss. Vous commencez chaque blinde avec quatre mains et trois défausses, sauf contrainte de boss.</p>
@@ -47,6 +57,6 @@
     <p>Seed de la partie <code id="current-seed"></code></p>
     <form method="dialog"><button class="primary">Retour</button></form>
   </dialog>
-  <script type="module" src="./app.mjs?v=4"></script>
+  <script type="module" src="./app.mjs?v=5"></script>
 </body>
 </html>
