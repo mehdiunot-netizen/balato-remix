@@ -65,7 +65,7 @@ export function restoreRun(state) {
   return { ...state, seed: state.seed ?? createSeed(), legacy: state.legacy ?? !state.seed, catalogSize: 7 };
 }
 
-export function evaluate(cards, owned = [], { hand = cards, firstPlay = false } = {}) {
+export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, trace = false } = {}) {
   if (!cards.length || cards.length > 5) throw new RangeError('Choisir de 1 à 5 cartes.');
   const sorted = [...cards].sort((a, b) => b.rank - a.rank);
   const groups = new Map();
@@ -97,14 +97,22 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false } 
   let chips = base + scoring.reduce((sum, card) => sum + cardChips(card), 0);
   let mult = multiplier;
   let factor = 1;
+  const steps = trace ? [{ type: 'base', chips: base, mult: multiplier, cardChips: chips - base }] : null;
+  const factors = [];
   for (const id of owned) {
     const [extraChips, extraMult, extraFactor] = jokers[id].bonus(scoring, context);
     chips += extraChips;
     mult += extraMult;
     factor *= extraFactor;
+    if (steps) {
+      if (extraChips || extraMult) steps.push({ type: 'add', id, chips: extraChips, mult: extraMult });
+      if (extraFactor !== 1) factors.push({ type: 'factor', id, factor: extraFactor });
+    }
   }
   mult *= factor;
-  return { name, chips, mult, total: Math.floor(chips * mult) };
+  const resultScore = { name, chips, mult, total: Math.floor(chips * mult) };
+  if (steps) resultScore.steps = steps.concat(factors);
+  return resultScore;
 }
 
 function shuffle(items, random) {
@@ -116,8 +124,8 @@ function shuffle(items, random) {
   return mixed;
 }
 
-export function previewHand(state, cards) {
-  return evaluate(cards, state.owned, { hand: state.hand, firstPlay: state.plays === (blindFor(state).plays ?? 4) });
+export function previewHand(state, cards, trace = false) {
+  return evaluate(cards, state.owned, { hand: state.hand, firstPlay: state.plays === (blindFor(state).plays ?? 4), trace });
 }
 
 export function start(seed = createSeed()) {
@@ -169,7 +177,7 @@ export function useCards(state, ids, action) {
   if (cards.length !== ids.length) return state;
   const next = { ...state, [counter]: state[counter] - 1 };
   if (action === 'play') {
-    next.last = previewHand(state, cards);
+    next.last = previewHand(state, cards, true);
     next.score += next.last.total;
     if (next.score >= blindFor(state).target) {
       next.reward = 4 + next.plays;

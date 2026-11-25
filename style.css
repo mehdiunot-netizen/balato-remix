@@ -387,3 +387,16 @@ body:has(.table:not([hidden])) {
   .shop .offers { max-height: 45dvh; overflow-y: auto; padding-bottom: 4px; }
   .shop-header .primary { margin: 0; }
 }
+#score-detail-total { color: var(--gold); font-weight: 800; }
+#score-dialog ol { padding-inline-start: 24px; margin-block: 8px; }
+#score-dialog li { padding-block: 3px; }
+.loadout li.triggered {
+  animation: joker-trigger 450ms ease-out both;
+  animation-delay: calc(var(--activation) * 170ms);
+}
+@keyframes joker-trigger {
+  45% { border-color: #ffe7a1; box-shadow: 0 0 14px #ffd278ad; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loadout li.triggered { animation: none; border-color: #ffe7a1; }
+}

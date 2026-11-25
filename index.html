@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./emblem.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./touch.png">
-  <link rel="stylesheet" href="./style.css?v=6">
+  <link rel="stylesheet" href="./style.css?v=7">
   <title>Contre-Pli</title>
 </head>
 <body>
@@ -57,6 +57,13 @@
     <p>Seed de la partie <code id="current-seed"></code></p>
     <form method="dialog"><button class="primary">Retour</button></form>
   </dialog>
-  <script type="module" src="./app.mjs?v=6"></script>
+  <dialog class="rules" id="score-dialog" aria-labelledby="score-detail-title">
+    <h2 id="score-detail-title">Détail du score</h2>
+    <p id="score-detail-name"></p>
+    <ol></ol>
+    <p id="score-detail-total"></p>
+    <form method="dialog"><button class="primary">Retour</button></form>
+  </dialog>
+  <script type="module" src="./app.mjs?v=7"></script>
 </body>
 </html>

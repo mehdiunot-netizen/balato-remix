@@ -1,4 +1,4 @@
-import { advance, blindFor, buy, continueRun, jokers, previewHand, restoreRun, start, useCards } from './game.mjs?v=6';
+import { advance, blindFor, buy, continueRun, jokers, previewHand, restoreRun, start, useCards } from './game.mjs?v=7';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -12,6 +12,7 @@ const table = document.querySelector('.table');
 const lobby = document.querySelector('.lobby');
 const enter = document.querySelector('#enter');
 const rules = document.querySelector('#rules');
+const scoreDialog = document.querySelector('#score-dialog');
 const seedDialog = document.querySelector('#seed-dialog');
 const seedInput = document.querySelector('#seed input');
 if (state) enter.textContent = 'Reprendre';
@@ -73,9 +74,12 @@ function persist() {
 
 function render(focus, scored = false) {
   const blind = blindFor(state);
+  const activations = state.last?.steps?.filter(step => step.type !== 'base') ?? [];
   const loadout = state.owned.map(id => {
     const { mark, name, text, theme } = jokers[id];
-    return `<li class="${theme || ''}"><details><summary><strong><span class="joker-icon" aria-hidden="true">${mark}</span>
+    const activation = activations.findIndex(step => step.id === id);
+    const pulse = scored && activation >= 0;
+    return `<li class="${theme || ''}${pulse ? ' triggered' : ''}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong><span class="joker-icon" aria-hidden="true">${mark}</span>
       ${name}</strong></summary><small>${text}</small></details></li>`;
   }).join('');
 
@@ -143,6 +147,7 @@ function render(focus, scored = false) {
       <div class="side-controls">
         <span class="wallet">${state.credits} crédits</span>
         <button type="button" data-action="rules">Règles</button>
+        ${state.last?.steps ? '<button type="button" data-action="score-detail">Détail du score</button>' : ''}
       </div>
     </section>
     ${content}
@@ -159,6 +164,27 @@ game.addEventListener('click', event => {
     if (selected.has(card)) selected.delete(card);
     else if (selected.size < 5) selected.add(card);
     render('[data-card="' + card + '"]');
+    return;
+  }
+
+  if (action === 'score-detail') {
+    const { name, steps, chips, mult, total } = state.last;
+    scoreDialog.querySelector('#score-detail-name').textContent = name;
+    const lines = steps.map(step => {
+      if (step.type === 'base') return step.chips + ' jetons de la main + ' + step.cardChips +
+        ' des cartes · multiplicateur de base ' + step.mult;
+      const bonus = step.type === 'factor' ? '×' + scoreFormat.format(step.factor) :
+        [step.chips ? '+' + step.chips + ' jetons' : '', step.mult ? '+' + step.mult + ' au multiplicateur' : ''].filter(Boolean).join(' · ');
+      return jokers[step.id].name + ' · ' + bonus;
+    });
+    scoreDialog.querySelector('ol').replaceChildren(...lines.map(line => {
+      const item = document.createElement('li');
+      item.textContent = line;
+      return item;
+    }));
+    scoreDialog.querySelector('#score-detail-total').textContent = chips + ' × ' + scoreFormat.format(mult) +
+      (Number.isInteger(mult) ? ' = ' : ' ≈ ') + total + ' points';
+    scoreDialog.showModal();
     return;
   }
 

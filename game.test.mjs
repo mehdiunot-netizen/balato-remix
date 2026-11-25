@@ -140,7 +140,14 @@ test('les nouveaux jokers utilisent les cartes gardées et le numéro de main da
   const preview = previewHand(state, played);
   assert.equal(preview.chips, 70);
   assert.equal(preview.mult, 10.5);
-  assert.deepEqual(useCards(state, played.map(c => c.id), 'play').last, preview);
+  const { steps, ...scored } = useCards(state, played.map(c => c.id), 'play').last;
+  assert.deepEqual(scored, preview);
+  assert.deepEqual(steps, [
+    { type: 'base', chips: 15, mult: 2, cardChips: 20 },
+    { type: 'add', id: owned[0], chips: 0, mult: 4 },
+    { type: 'add', id: owned[1], chips: 35, mult: 0 },
+    { type: 'factor', id: owned[2], factor: 1.75 },
+  ]);
   assert.equal(previewHand({ ...state, plays: 3 }, played).mult, 6);
   assert.equal(restoreRun({ ...state, catalogSize: undefined }).catalogSize, 7);
 });
