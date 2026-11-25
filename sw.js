@@ -1,5 +1,5 @@
-const CACHE = 'contre-pli-14';
-const assets = ['./', './index.html', './style.css?v=14', './app.mjs?v=14', './game.mjs?v=14',
+const CACHE = 'contre-pli-15';
+const assets = ['./', './index.html', './style.css?v=15', './app.mjs?v=15', './game.mjs?v=14',
   './jokers.mjs?v=14', './manifest.webmanifest', './emblem.svg', './touch.png', './art/observatoire.jpg', './art/figures.jpg', './art/emblemes.jpg', './art/augures.jpg'];
 
 self.addEventListener('install', event => {
