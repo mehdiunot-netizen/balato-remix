@@ -1,6 +1,6 @@
 # Contre-Pli
 
-Un jeu de cartes solo en français, conçu pour une partie rapide sur iPhone. Les cartes, l’emblème, les jokers et le barème ont été créés pour ce projet.
+Un jeu de cartes solo en français, conçu pour une partie rapide sur iPhone en mode paysage. Les cartes, l’emblème, les jokers et le barème ont été créés pour ce projet.
 
 ## Jouer
 

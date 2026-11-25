@@ -8,10 +8,18 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./emblem.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./touch.png">
-  <link rel="stylesheet" href="./style.css?v=2">
+  <link rel="stylesheet" href="./style.css?v=3">
   <title>Contre-Pli</title>
 </head>
 <body>
+  <section class="rotate-screen" aria-labelledby="rotate-title">
+    <div>
+      <img src="./emblem.svg" alt="" width="60" height="60">
+      <h1 id="rotate-title">Tourne ton iPhone</h1>
+      <p>Contre-Pli se joue à l’horizontale.</p>
+      <p>Si l’écran ne pivote pas, désactive le verrouillage de l’orientation dans le Centre de contrôle.</p>
+    </div>
+  </section>
   <section class="lobby" aria-labelledby="lobby-title">
     <div class="lobby-inner">
       <div class="lobby-cards" aria-hidden="true">
@@ -23,20 +31,17 @@
     </div>
   </section>
   <main class="table" hidden>
-    <header class="masthead">
-      <div class="brand"><img src="./emblem.svg" alt="" width="44" height="44"><span>Contre-Pli</span></div>
-      <span class="wallet" id="wallet"></span>
-    </header>
     <div id="game"></div>
     <p id="announcement" class="sr-only" role="status"></p>
-    <details class="rules">
-      <summary>Règles du jeu</summary>
+  </main>
+  <dialog class="rules" id="rules" aria-labelledby="rules-title">
+    <h2 id="rules-title">Règles du jeu</h2>
       <p>Franchissez six blindes. À chaque blinde, vous avez quatre mains et trois défausses.</p>
       <p>Touchez jusqu’à cinq cartes. Jouez la combinaison pour marquer, ou défaussez ces cartes pour en piocher d’autres. Seules les cartes qui forment la combinaison ajoutent leurs jetons. Le score de la main est égal aux jetons multipliés par le multiplicateur.</p>
       <p>De la plus faible à la plus forte : carte haute, paire, double paire, brelan, quinte, couleur, full, carré, quinte flush. L’as vaut aussi 1 dans A–2–3–4–5.</p>
       <p>Chaque blinde réussie rapporte quatre crédits, plus un par main restante. La boutique propose des jokers qui bonifient vos prochaines mains. Vous pouvez en garder trois.</p>
-    </details>
-  </main>
-  <script type="module" src="./app.mjs?v=2"></script>
+    <form method="dialog"><button class="primary">Retour</button></form>
+  </dialog>
+  <script type="module" src="./app.mjs?v=3"></script>
 </body>
 </html>

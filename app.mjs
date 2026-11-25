@@ -1,7 +1,6 @@
 import { advance, blinds, buy, evaluate, jokers, start, useCards } from './game.mjs';
 
 const game = document.querySelector('#game');
-const wallet = document.querySelector('#wallet');
 const announcement = document.querySelector('#announcement');
 const storageKey = 'contre-pli-v1';
 const names = { '♠': 'pique', '♥': 'cœur', '♣': 'trèfle', '♦': 'carreau' };
@@ -11,6 +10,7 @@ const selected = new Set();
 const table = document.querySelector('.table');
 const lobby = document.querySelector('.lobby');
 const enter = document.querySelector('#enter');
+const rules = document.querySelector('#rules');
 if (state.last || state.discards < 3 || state.round) enter.textContent = 'Reprendre';
 enter.addEventListener('click', () => {
   lobby.hidden = true;
@@ -38,11 +38,10 @@ function restore() {
 
 function render(focus, scored = false) {
   const blind = blinds[state.round];
-  wallet.textContent = state.credits + ' crédits';
   const loadout = state.owned.map(id => {
     const { mark, name, text } = jokers[id];
-    return '<li><strong><span class="joker-icon" aria-hidden="true">' + mark + '</span> ' + name +
-      '</strong><small>' + text + '</small></li>';
+    return '<li><details><summary><strong><span class="joker-icon" aria-hidden="true">' + mark + '</span> ' + name +
+      '</strong></summary><small>' + text + '</small></details></li>';
   }).join('');
 
   let content;
@@ -51,7 +50,7 @@ function render(focus, scored = false) {
     const preview = selected.size ? evaluate(cards.filter(c => selected.has(c.id)), state.owned) : null;
     content = `
       <section class="play" aria-label="Main en cours">
-        <div class="hand-info"><h3>Votre main</h3><span>${state.pile.length} en pioche</span></div>
+        <div class="hand-info"><h3>Votre main</h3><span class="pile"><i aria-hidden="true"></i>${state.pile.length} en pioche</span></div>
         <div class="cards">${cards.map((card, i) => {
           const rank = faces[card.rank] || card.rank;
           return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
@@ -102,6 +101,10 @@ function render(focus, scored = false) {
       <div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
       <progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>
       ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
+      <div class="side-controls">
+        <span class="wallet">${state.credits} crédits</span>
+        <button type="button" data-action="rules">Règles</button>
+      </div>
     </section>
     ${content}
     <section class="loadout"><h3>Jokers <span>${state.owned.length}/3</span></h3>
@@ -117,6 +120,11 @@ game.addEventListener('click', event => {
     if (selected.has(card)) selected.delete(card);
     else if (selected.size < 5) selected.add(card);
     render('[data-card="' + card + '"]');
+    return;
+  }
+
+  if (action === 'rules') {
+    rules.showModal();
     return;
   }
 
