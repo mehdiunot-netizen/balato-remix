@@ -1,4 +1,4 @@
-import { cardChips, jokers } from './jokers.mjs?v=9';
+import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=10';
 export { jokers };
 
 const suits = ['♠', '♥', '♣', '♦'];
@@ -68,6 +68,9 @@ export function restoreRun(state) {
 export const augures = {
   prism: { name: 'Prisme', mark: '✧', text: '+10 au multiplicateur quand cette carte marque.' },
   steel: { name: 'Armure', mark: '◆', text: '×1,5 au multiplicateur quand cette carte reste en main.' },
+  gold: { name: 'Ducat', mark: '¤', text: '+3 crédits si cette carte reste en main quand tu gagnes la blinde.' },
+  bonus: { name: 'Réserve', mark: '✚', text: '+30 jetons quand cette carte marque.' },
+  wild: { name: 'Caméléon', mark: '✺', text: 'Compte comme n’importe quelle enseigne, sans changer son rang.' },
 };
 export const packs = [
   { name: 'Pochette d’augures', price: 4, count: 3 },
@@ -86,7 +89,7 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, t
   const [first, second = []] = sets;
   const ranks = [...groups.keys()];
   const five = sorted.length === 5;
-  const flush = five && sorted.every(c => c.suit === sorted[0].suit);
+  const flush = five && suits.some(suit => sorted.every(card => matchesSuit(card, suit)));
   const straight = five && ranks.length === 5 &&
     (ranks[0] - ranks[4] === 4 || ranks.join() === '14,5,4,3,2');
 
@@ -108,9 +111,13 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, t
   let factor = 1;
   const steps = trace ? [{ type: 'base', chips: base, mult: multiplier, cardChips: chips - base }] : null;
   for (const card of scoring) {
-    if (card.augure !== 'prism') continue;
-    mult += 10;
-    steps?.push({ type: 'augure', name: augures.prism.name, mult: 10 });
+    if (card.augure === 'prism') {
+      mult += 10;
+      steps?.push({ type: 'augure', name: augures.prism.name, mult: 10 });
+    } else if (card.augure === 'bonus') {
+      chips += 30;
+      steps?.push({ type: 'augure', name: augures.bonus.name, chips: 30 });
+    }
   }
   for (const card of context.held) {
     if (card.augure !== 'steel') continue;
@@ -202,7 +209,8 @@ export function useCards(state, ids, action) {
     next.last = previewHand(state, cards, true);
     next.score += next.last.total;
     if (next.score >= blindFor(state).target) {
-      next.reward = 4 + next.plays;
+      next.goldReward = state.hand.filter(card => card.augure === 'gold' && !ids.includes(card.id)).length * 3;
+      next.reward = 4 + next.plays + next.goldReward;
       next.credits += next.reward;
       const lastLegacyBlind = state.legacy && state.round === legacyBlinds.length - 1;
       const classicWin = !state.legacy && state.round === CLASSIC_ROUNDS - 1;
@@ -241,8 +249,9 @@ export function openPack(state, id) {
   const candidates = deck.filter(card => !state.enhancements?.[card.id]);
   if (candidates.length < pack.count) return state;
   const random = seededRandom(state.seed, 'augures', state.round);
+  const kinds = shuffle(Object.keys(augures), seededRandom(state.seed, 'augure-kinds', state.round));
   const choices = shuffle(candidates, random).slice(0, pack.count)
-    .map((card, index) => ({ ...card, augure: index % 2 === 0 ? 'prism' : 'steel' }));
+    .map((card, index) => ({ ...card, augure: kinds[index] }));
   return { ...state, phase: 'pack', packBought: true, credits: state.credits - pack.price, choices };
 }
 

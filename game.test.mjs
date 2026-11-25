@@ -175,7 +175,7 @@ test('une pochette tirée par la seed survit à un rechargement et transforme un
   const resolved = chooseAugure(saved, choice.id);
   assert.equal(openPack(resolved, id), resolved);
   const next = advance(resolved);
-  assert.equal([...next.hand, ...next.pile].find(card => card.id === choice.id).augure, 'prism');
+  assert.equal([...next.hand, ...next.pile].find(card => card.id === choice.id).augure, choice.augure);
   assert.equal(chooseAugure(saved, null).credits, opened.credits);
 });
 
@@ -188,4 +188,26 @@ test('Prisme agit seulement sur les cartes marquantes et Armure sur les cartes g
   assert.equal(mult, (2 + 10) * 2.25 + 3);
   assert.equal(chips, 35);
   assert.deepEqual(steps.slice(1, 4).map(step => step.name), ['Prisme', 'Armure', 'Armure']);
+});
+
+test('Réserve ajoute des jetons, Caméléon complète une couleur et active les jokers d’enseigne', () => {
+  const hand = cards('♥2', '♥5', '♥7', '♥9', '♣11');
+  hand[0] = { ...hand[0], augure: 'bonus' };
+  hand[4] = { ...hand[4], augure: 'wild' };
+  const result = evaluate(hand, [5], { trace: true });
+  assert.equal(result.name, 'Couleur');
+  assert.equal(result.chips, 104);
+  assert.equal(result.mult, 15);
+  assert.equal(result.steps[1].name, 'Réserve');
+});
+
+test('Ducat rapporte uniquement quand la carte est gardée sur la main gagnante', () => {
+  const [a, b, c] = cards('♥10', '♦10', '♣11');
+  const state = { ...start('ducat'), target: 40, hand: [
+    a, { ...b, augure: 'gold' }, { ...c, augure: 'gold' },
+  ] };
+  const won = useCards(state, [a.id, b.id], 'play');
+  assert.equal(won.phase, 'shop');
+  assert.equal(won.goldReward, 3);
+  assert.equal(won.credits - state.credits, 10);
 });

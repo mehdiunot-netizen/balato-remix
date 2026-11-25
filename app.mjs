@@ -1,4 +1,4 @@
-import { advance, augures, blindFor, buy, chooseAugure, continueRun, jokers, offeredPack, openPack, packs, previewHand, restoreRun, start, useCards } from './game.mjs?v=9';
+import { advance, augures, blindFor, buy, chooseAugure, continueRun, jokers, offeredPack, openPack, packs, previewHand, restoreRun, start, useCards } from './game.mjs?v=10';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -126,7 +126,7 @@ function render(focus, scored = false) {
     content = `
       <section class="shop">
         <header class="shop-header">
-          <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits</p></div>
+          <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits${state.goldReward ? ' (dont ' + state.goldReward + ' Ducat)' : ''}</p></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
         ${pack ? `<div class="pack-shelf" aria-label="Pochettes">

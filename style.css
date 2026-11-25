@@ -408,3 +408,6 @@ body:has(.table:not([hidden])) {
 @media (orientation: landscape) and (max-height: 360px) {
   .pack-shelf + .offers { max-height: 33dvh; }
 }
+.card.gold { background: linear-gradient(145deg, #fff1b1, #dfac51, #fbe098); }
+.card.bonus { background: linear-gradient(145deg, #fff1d1, #bddac7, #e6ecd1); }
+.card.wild { background: linear-gradient(145deg, #f5e4b0, #c9b5df, #b5dfd0); }
