@@ -1,4 +1,4 @@
-import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=11';
+import { cardChips, jokers, matchesSuit } from './jokers.mjs?v=12';
 export { jokers };
 
 const suits = ['♠', '♥', '♣', '♦'];
@@ -25,7 +25,7 @@ const CLASSIC_ROUNDS = 24;
 function blindAt(round) {
   const ante = Math.floor(round / 3) + 1;
   const type = round % 3;
-  const rawTarget = 125 * 1.22 ** (ante - 1) * [1, 1.45, 1.85][type];
+  const rawTarget = 300 * 1.22 ** (ante - 1) * [1, 1.5, 2][type];
   const target = Math.min(Number.MAX_SAFE_INTEGER, Math.round(rawTarget / 5) * 5);
   if (type === 2) return { ante, target, kind: 'Boss', ...bosses[(ante - 1) % bosses.length] };
   const name = type === 0 ? 'Petite blinde' : 'Grosse blinde';
@@ -156,7 +156,7 @@ export function previewHand(state, cards, trace = false) {
 }
 
 export function start(seed = createSeed()) {
-  return deal({ seed, seededBlinds: true, round: 0, credits: 3, owned: [], catalogSize: jokers.length });
+  return deal({ seed, round: 0, credits: 3, owned: [], catalogSize: jokers.length });
 }
 
 function deal(carry) {
@@ -167,9 +167,9 @@ function deal(carry) {
   });
   const hand = pile.splice(0, blind.size ?? 8);
   const plays = blind.plays ?? 4;
-  const variation = carry.seededBlinds ? 0.95 + seededRandom(carry.seed, 'blind', carry.round)() * 0.1 : 1;
-  const nominalTarget = Math.min(Number.MAX_SAFE_INTEGER, Math.round(blind.target * variation));
-  const target = carry.legacy ? blind.target : Math.min(nominalTarget, reachableScore(hand, pile, plays, carry.owned));
+  const target = carry.legacy ? blind.target : Math.min(
+    blind.target, reachableScore(hand, pile, plays, carry.owned),
+  );
   return { ...carry, target, phase: 'play', score: 0, plays, discards: blind.discards ?? 3,
     hand, pile, offers: [], last: null, reward: 0 };
 }
@@ -337,6 +337,5 @@ export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
     credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
-    enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots,
-    seededBlinds: state.seededBlinds });
+    enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots });
 }

@@ -45,7 +45,7 @@ test('huit mises, contraintes des boss, boutique et victoire', () => {
   let state = start('test');
   for (const [round] of blinds.entries()) {
     const hand = cards('♥10', '♥11', '♥12', '♥13', '♥14');
-    state = useCards({ ...state, hand }, hand.map(c => c.id), 'play');
+    state = useCards({ ...state, hand, score: blindFor(state).target - 1 }, hand.map(c => c.id), 'play');
     assert.equal(state.round, round);
     assert.equal(state.reward, 3 + (blinds[round].plays ?? 4));
     if (round === blinds.length - 1) break;
@@ -265,4 +265,9 @@ test('une seed fixe la blinde dès la distribution et le paquet réduit peut avo
     assert.equal(state.target, target);
   }
   assert.equal(state.phase, 'shop');
+});
+
+test('les trois types de blinde partent du même barème de mise', () => {
+  assert.deepEqual(blinds.slice(0, 3).map(blind => blind.target), [300, 450, 600]);
+  assert.ok(start('limite').target <= 300);
 });
