@@ -1,3 +1,6 @@
+import { cardChips, jokers } from './jokers.mjs';
+export { jokers };
+
 const suits = ['♠', '♥', '♣', '♦'];
 export const deck = suits.flatMap(suit =>
   Array.from({ length: 13 }, (_, i) => ({ id: suit + (i + 2), suit, rank: i + 2 }))
@@ -58,27 +61,11 @@ export function createSeed() {
 }
 
 export function restoreRun(state) {
-  return state.seed ? state : { ...state, seed: createSeed(), legacy: true };
+  if (state.catalogSize) return state;
+  return { ...state, seed: state.seed ?? createSeed(), legacy: state.legacy ?? !state.seed, catalogSize: 7 };
 }
 
-export const jokers = [
-  { name: 'Boussole', mark: '✦', price: 4, text: '+20 jetons à chaque main.',
-    bonus: () => [20, 0, 1] },
-  { name: 'Cerf-volant', mark: '◇', price: 5, text: '+3 au multiplicateur à chaque main.',
-    bonus: () => [0, 3, 1] },
-  { name: 'Rose des vents', mark: '✳', price: 5, text: '+6 au multiplicateur si les cartes marquantes couvrent 3 ou 4 enseignes.',
-    bonus: cards => [0, new Set(cards.map(c => c.suit)).size >= 3 ? 6 : 0, 1] },
-  { name: 'Girouette', mark: '➶', price: 6, text: '×2 au multiplicateur si cinq cartes marquent.',
-    bonus: cards => [0, 0, cards.length === 5 ? 2 : 1] },
-  { name: 'Ancre', mark: '⚓︎', price: 4, text: '+40 jetons si exactement deux cartes marquent.',
-    bonus: cards => [cards.length === 2 ? 40 : 0, 0, 1] },
-  { name: 'Fanion', mark: '⚑', price: 4, text: '+2 au multiplicateur par cœur marquant.',
-    bonus: cards => [0, 2 * cards.filter(c => c.suit === '♥').length, 1] },
-  { name: 'L’Orbite de π', mark: 'π', price: 7, theme: 'orbit', text: 'Multiplie le multiplicateur final par π. Le score est arrondi à l’entier inférieur.',
-    bonus: () => [0, 0, Math.PI] },
-];
-
-export function evaluate(cards, owned = []) {
+export function evaluate(cards, owned = [], { hand = cards, firstPlay = false } = {}) {
   if (!cards.length || cards.length > 5) throw new RangeError('Choisir de 1 à 5 cartes.');
   const sorted = [...cards].sort((a, b) => b.rank - a.rank);
   const groups = new Map();
@@ -106,11 +93,12 @@ export function evaluate(cards, owned = []) {
   else result = ['Carte haute', 8, 1, first];
 
   const [name, base, multiplier, scoring] = result;
-  let chips = base + scoring.reduce((sum, c) => sum + (c.rank === 14 ? 11 : Math.min(c.rank, 10)), 0);
+  const context = { name, played: cards, held: hand.filter(card => !cards.some(c => c.id === card.id)), firstPlay };
+  let chips = base + scoring.reduce((sum, card) => sum + cardChips(card), 0);
   let mult = multiplier;
   let factor = 1;
   for (const id of owned) {
-    const [extraChips, extraMult, extraFactor] = jokers[id].bonus(scoring);
+    const [extraChips, extraMult, extraFactor] = jokers[id].bonus(scoring, context);
     chips += extraChips;
     mult += extraMult;
     factor *= extraFactor;
@@ -128,8 +116,12 @@ function shuffle(items, random) {
   return mixed;
 }
 
+export function previewHand(state, cards) {
+  return evaluate(cards, state.owned, { hand: state.hand, firstPlay: state.plays === (blindFor(state).plays ?? 4) });
+}
+
 export function start(seed = createSeed()) {
-  return deal({ seed, round: 0, credits: 3, owned: [] });
+  return deal({ seed, round: 0, credits: 3, owned: [], catalogSize: jokers.length });
 }
 
 function deal(carry) {
@@ -155,7 +147,7 @@ function reachableScore(hand, pile, plays, owned) {
     for (let mask = 1; mask < (1 << hand.length); mask++) {
       const cards = hand.filter((_, i) => mask & (1 << i));
       if (cards.length > 5) continue;
-      const total = evaluate(cards, owned).total;
+      const total = evaluate(cards, owned, { hand, firstPlay: turn === 0 }).total;
       if (total > bestScore) {
         bestScore = total;
         bestCards = cards;
@@ -177,7 +169,7 @@ export function useCards(state, ids, action) {
   if (cards.length !== ids.length) return state;
   const next = { ...state, [counter]: state[counter] - 1 };
   if (action === 'play') {
-    next.last = evaluate(cards, state.owned);
+    next.last = previewHand(state, cards);
     next.score += next.last.total;
     if (next.score >= blindFor(state).target) {
       next.reward = 4 + next.plays;
@@ -186,7 +178,7 @@ export function useCards(state, ids, action) {
       const classicWin = !state.legacy && state.round === CLASSIC_ROUNDS - 1;
       next.phase = lastLegacyBlind || classicWin ? 'win' : 'shop';
       if (!lastLegacyBlind) {
-        const available = jokers.map((_, i) => i).filter(i => !state.owned.includes(i));
+        const available = jokers.slice(0, state.catalogSize ?? 7).map((_, i) => i).filter(i => !state.owned.includes(i));
         next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
       }
       return next;
@@ -213,5 +205,5 @@ export function continueRun(state) {
 export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
-    credits: state.credits, owned: state.owned });
+    credits: state.credits, owned: state.owned, catalogSize: state.catalogSize });
 }

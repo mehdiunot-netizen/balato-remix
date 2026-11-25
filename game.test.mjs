@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, blindFor, blinds, buy, continueRun, deck, evaluate, jokers, restoreRun, start, useCards } from './game.mjs';
+import { advance, blindFor, blinds, buy, continueRun, deck, evaluate, jokers, previewHand, restoreRun, start, useCards } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -93,7 +93,7 @@ test('la même seed reproduit la pioche et la boutique après sauvegarde', () =>
 });
 
 test('une sauvegarde du prototype conserve la progression à six blindes', () => {
-  const { seed, ...old } = start('ancienne');
+  const { seed, catalogSize, ...old } = start('ancienne');
   const saved = { ...old, round: 5 };
   const restored = restoreRun(saved);
   assert.equal(blindFor(restored).name, 'L’Œil du vent');
@@ -130,4 +130,17 @@ test('le joker π applique le facteur final puis arrondit le score', () => {
   assert.equal(preview.chips, 35);
   assert.equal(preview.mult, 5 * Math.PI);
   assert.equal(preview.total, Math.floor(175 * Math.PI));
+});
+
+test('les nouveaux jokers utilisent les cartes gardées et le numéro de main dans le score réel', () => {
+  const owned = ['Veilleuse', 'Lest', 'Feu de départ'].map(name => jokers.findIndex(j => j.name === name));
+  const hand = cards('♥10', '♦10', '♠7', '♣3', '♥13', '♣12');
+  const played = hand.slice(0, 4);
+  const state = { ...start('joker-context'), hand, owned };
+  const preview = previewHand(state, played);
+  assert.equal(preview.chips, 70);
+  assert.equal(preview.mult, 10.5);
+  assert.deepEqual(useCards(state, played.map(c => c.id), 'play').last, preview);
+  assert.equal(previewHand({ ...state, plays: 3 }, played).mult, 6);
+  assert.equal(restoreRun({ ...state, catalogSize: undefined }).catalogSize, 7);
 });

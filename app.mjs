@@ -1,4 +1,4 @@
-import { advance, blindFor, buy, continueRun, evaluate, jokers, restoreRun, start, useCards } from './game.mjs?v=5';
+import { advance, blindFor, buy, continueRun, jokers, previewHand, restoreRun, start, useCards } from './game.mjs?v=6';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -82,7 +82,7 @@ function render(focus, scored = false) {
   let content;
   if (state.phase === 'play') {
     const cards = [...state.hand].sort((a, b) => b.rank - a.rank || a.suit.localeCompare(b.suit));
-    const preview = selected.size ? evaluate(cards.filter(c => selected.has(c.id)), state.owned) : null;
+    const preview = selected.size ? previewHand(state, cards.filter(c => selected.has(c.id))) : null;
     content = `
       <section class="play" aria-label="Main en cours">
         <div class="hand-info"><h3>Votre main</h3><span class="pile"><i aria-hidden="true"></i>${state.pile.length} en pioche</span></div>

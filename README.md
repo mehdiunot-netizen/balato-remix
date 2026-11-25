@@ -21,3 +21,7 @@ Franchissez huit mises de trois blindes pour gagner, puis poursuivez la même pa
 ```sh
 node --test game.test.mjs
 ```
+
+## Ajouter un joker
+
+Ajoutez une entrée à la fin de `jokers.mjs` pour conserver les identifiants des sauvegardes. Une entrée définit un nom, un symbole, un prix, une description et une fonction `bonus(cartesMarquantes, contexte)`. Le contexte fournit la combinaison, les cartes jouées, les cartes gardées et un indicateur de première main. Retournez `[jetons ajoutés, multiplicateur ajouté, facteur final]`. Le moteur applique les ajouts, puis les facteurs, puis arrondit le score à l’entier inférieur. Les nouvelles entrées apparaissent en boutique dans les nouvelles parties.
