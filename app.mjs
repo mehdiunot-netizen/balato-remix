@@ -8,6 +8,23 @@ const names = { '♠': 'pique', '♥': 'cœur', '♣': 'trèfle', '♦': 'carrea
 const faces = { 11: 'V', 12: 'D', 13: 'R', 14: 'A' };
 let state = restore();
 const selected = new Set();
+const table = document.querySelector('.table');
+const lobby = document.querySelector('.lobby');
+const enter = document.querySelector('#enter');
+if (state.last || state.discards < 3 || state.round) enter.textContent = 'Reprendre';
+enter.addEventListener('click', () => {
+  lobby.hidden = true;
+  table.hidden = false;
+  game.querySelector('#blind-name').focus();
+});
+
+const court = { 11: ['◆', 'Valet'], 12: ['✦', 'Dame'], 13: ['♜', 'Roi'] };
+function cardArt(card) {
+  if (court[card.rank]) {
+    return '<span class="court"><span>' + court[card.rank][0] + '</span></span>';
+  }
+  return '<span class="suit">' + card.suit + '</span>';
+}
 
 function restore() {
   try {
@@ -19,12 +36,12 @@ function restore() {
   return start();
 }
 
-function render(focus) {
+function render(focus, scored = false) {
   const blind = blinds[state.round];
   wallet.textContent = state.credits + ' crédits';
   const loadout = state.owned.map(id => {
     const { mark, name, text } = jokers[id];
-    return '<li><strong><span aria-hidden="true">' + mark + '</span> ' + name +
+    return '<li><strong><span class="joker-icon" aria-hidden="true">' + mark + '</span> ' + name +
       '</strong><small>' + text + '</small></li>';
   }).join('');
 
@@ -35,17 +52,18 @@ function render(focus) {
     content = `
       <section class="play" aria-label="Main en cours">
         <div class="hand-info"><h3>Votre main</h3><span>${state.pile.length} en pioche</span></div>
-        <div class="cards">${cards.map(card => {
+        <div class="cards">${cards.map((card, i) => {
           const rank = faces[card.rank] || card.rank;
-          return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''}" data-card="${card.id}"
-            aria-label="${rank} de ${names[card.suit]}" aria-pressed="${selected.has(card.id)}"
+          return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
+            aria-label="${court[card.rank]?.[1] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}" aria-pressed="${selected.has(card.id)}"
             ${selected.size === 5 && !selected.has(card.id) ? 'disabled' : ''}>
-            <span class="rank" aria-hidden="true">${rank}</span>
-            <span class="suit" aria-hidden="true">${card.suit}</span>
+            <span class="rank" aria-hidden="true">${rank}<small>${card.suit}</small></span>
+            <span class="card-art" aria-hidden="true">${cardArt(card)}</span>
+            <span class="rank opposite" aria-hidden="true">${rank}<small>${card.suit}</small></span>
           </button>`;
         }).join('')}</div>
         <div class="preview" aria-live="polite">${preview ?
-          `<strong>${preview.name}</strong><span>${preview.chips} jetons × ${preview.mult} = <b>${preview.total}</b></span>` :
+          `<strong>${preview.name}</strong><span class="equation"><span class="chips">${preview.chips} jetons</span> × <span class="mult">${preview.mult}</span> = <b>${preview.total}</b></span>` :
           '<span>Sélectionnez de 1 à 5 cartes.</span>'}</div>
         <div class="actions">
           <button class="primary" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
@@ -81,7 +99,7 @@ function render(focus) {
     <section class="blind" aria-labelledby="blind-name">
       <span class="eyebrow">Blinde ${state.round + 1} / ${blinds.length}</span>
       <h2 id="blind-name" tabindex="-1">${blind.name}</h2>
-      <div class="score"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
+      <div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
       <progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>
       ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
     </section>
@@ -115,7 +133,7 @@ game.addEventListener('click', event => {
   } catch {
     // Storage failures do not interrupt play.
   }
-  render(state.phase === 'play' ? '#blind-name' : 'h3[tabindex="-1"]');
+  render(state.phase === 'play' ? '#blind-name' : 'h3[tabindex="-1"]', action === 'play');
   if (action === 'play') announcement.textContent = state.last.name + ', +' + state.last.total + ' points.';
   else if (action === 'discard') announcement.textContent = 'Cartes remplacées.';
   else if (target.dataset.buy !== undefined) announcement.textContent = 'Joker équipé.';

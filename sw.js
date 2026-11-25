@@ -1,15 +1,15 @@
-const CACHE = 'contre-pli-1';
-const assets = ['./', './index.html', './style.css', './app.mjs', './game.mjs',
+const CACHE = 'contre-pli-2';
+const assets = ['./', './index.html', './style.css?v=2', './app.mjs?v=2', './game.mjs',
   './manifest.webmanifest', './emblem.svg', './touch.png'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(assets)));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(assets)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys
     .filter(key => key.startsWith('contre-pli-') && key !== CACHE)
-    .map(key => caches.delete(key)))));
+    .map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', event => {

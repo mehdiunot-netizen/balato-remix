@@ -88,3 +88,161 @@ small { display: block; margin-top: 2px; }
 .shop .primary, .finish .primary { width: 100%; margin-top: 8px; }
 summary { cursor: pointer; padding: 4px 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+:root {
+  background: #171137;
+  --gold: #ffd278;
+  --muted: #e4cfe8;
+  --line: #684f83;
+  color: #fff3d8;
+}
+
+[hidden] { display: none !important; }
+body {
+  min-height: 100svh;
+  background:
+    repeating-linear-gradient(38deg, transparent 0 46px, #ac86c511 47px 48px),
+    radial-gradient(ellipse at 55% 72%, #58345f, #211638 72%);
+}
+
+.lobby {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  text-align: center;
+  overflow: hidden;
+  background:
+    repeating-radial-gradient(ellipse at 50% 40%, transparent 0 34px, #ffc78424 35px 36px, transparent 37px 53px),
+    conic-gradient(from 20deg at 50% 40%, #4d2369, #201039, #853b64, #211242, #4d2369);
+}
+.lobby-inner {
+  width: min(100%, 530px);
+  padding: clamp(22px, 7vw, 45px) 12px;
+  border: 1px solid #aa7a91;
+  border-radius: 48% 48% 16px 16px / 23% 23% 16px 16px;
+  background: #211436ed;
+  box-shadow: 0 0 0 6px #2e1949, 0 0 0 7px #936281, 0 24px 70px #0d092a;
+}
+.lobby-cards { display: flex; justify-content: center; align-items: center; height: 104px; }
+.lobby-cards span {
+  display: grid;
+  place-items: center;
+  width: 65px;
+  height: 90px;
+  margin: 0 -4px;
+  border: 3px solid #fff4d0;
+  border-radius: 8px;
+  background: #f3d6a3;
+  color: #43204f;
+  box-shadow: 0 6px #110d25;
+  font-size: 2rem;
+  transform: rotate(-14deg) translateY(6px);
+}
+.lobby-cards span:nth-child(2) { z-index: 1; background: #682e64; color: #ffe196; transform: translateY(-5px); }
+.lobby-cards span:last-child { color: #a83553; transform: rotate(14deg) translateY(6px); }
+.lobby-kicker, .eyebrow { text-transform: uppercase; letter-spacing: .16em; color: var(--gold); }
+.lobby h1 {
+  margin: 6px 0 22px;
+  color: #fff0b9;
+  font: 900 clamp(2.75rem, 12vw, 6rem)/1 Georgia, serif;
+  letter-spacing: -.07em;
+  text-shadow: 2px 3px #8c426c, 4px 6px #120c25;
+}
+.lobby h1 span { color: #e89c8f; }
+.lobby .primary { min-width: 150px; }
+
+.table { max-width: 1000px; }
+.brand { font: 700 1.35rem Georgia, serif; letter-spacing: -.035em; }
+.brand img { width: 32px; height: 32px; }
+#game { display: grid; gap: 12px; }
+#game > section { margin: 0; min-width: 0; }
+.blind, .loadout, .shop, .finish, .rules {
+  background: #261a3e;
+  border-color: #755989;
+  box-shadow: 0 3px #170d2d;
+}
+.blind { border-top: 3px solid #deaa67; }
+.score strong { color: #fff1ae; font-size: 2.15rem; }
+progress { accent-color: #eaa56e; }
+.loadout { grid-row: 2; padding-block: 8px; }
+.loadout ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 0; }
+.loadout li {
+  border: 1px solid #9374a5;
+  border-radius: 6px;
+  background: linear-gradient(150deg, #58366b, #302049);
+  padding: 5px;
+  text-align: center;
+}
+.loadout small { font-size: .76rem; overflow-wrap: anywhere; }
+.joker-icon { display: block; color: var(--gold); font-size: 1.35rem; line-height: 1.1; }
+.play {
+  border: 1px solid #9671a9;
+  border-radius: 16px;
+  padding: 10px 9px 12px;
+  background:
+    radial-gradient(ellipse at 50% 65%, #62386477, transparent 80%),
+    repeating-linear-gradient(132deg, #ac8cab22 0 1px, transparent 1px 17px),
+    #2e214d;
+  box-shadow: inset 0 0 24px #170f30, 0 4px #180f2d;
+}
+.hand-info { padding-bottom: 12px; }
+.cards { gap: 6px; padding: 5px 1px 8px; }
+.card {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  min-height: 64px;
+  padding: 0;
+  border: 2px solid #e0b98d;
+  background: #f8eacb;
+  color: #332248;
+  box-shadow: inset 0 0 0 2px #fff6db, 0 4px #170f32;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+.card.red { color: #a12655; }
+.rank { top: 4px; left: 6px; line-height: .92; }
+.rank small { color: inherit; margin: 1px 0 0; font-size: .72em; }
+.opposite { top: auto; left: auto; right: 6px; bottom: 4px; transform: rotate(180deg); }
+.card-art { display: grid; place-items: center; position: absolute; inset: 12%; pointer-events: none; }
+.card-art .suit { margin: 0; font-size: clamp(1.45rem, 5vw, 3rem); }
+.court {
+  display: grid;
+  place-items: center;
+  width: 62%;
+  height: 75%;
+  border: 1px solid currentColor;
+  border-radius: 45% 45% 35% 35%;
+  background: repeating-linear-gradient(45deg, #d29f6d40 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 0 2px #ffedc8;
+  font-size: clamp(1.05rem, 4vw, 2.4rem);
+}
+.card[aria-pressed="true"] { transform: translateY(-7px); background: #ffe096; border-color: #a73b69; box-shadow: 0 0 0 2px #df7cb1, 0 6px #170f32; z-index: 1; }
+button { background: #4f3567; border-color: #a178a7; box-shadow: 0 3px #180f2d; }
+.primary { background: #ffd278; border-color: #ffe6ab; color: #281638; }
+.preview { align-content: center; min-height: 50px; }
+.equation { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.chips, .mult { border-radius: 5px; padding: 2px 5px; color: #251831; font-weight: 800; }
+.chips { background: #97d9d8; }
+.mult { background: #f3a3c5; }
+.scored strong { animation: score-pop 380ms ease-out; }
+@keyframes score-pop {
+  40% { transform: scale(1.18); color: #fff; text-shadow: 0 0 16px #ffd278; }
+}
+@media (min-width: 620px) {
+  .table { padding-inline: max(24px, env(safe-area-inset-left)) max(24px, env(safe-area-inset-right)); }
+  #game { grid-template-columns: minmax(158px, .85fr) minmax(0, 3fr); align-items: start; }
+  .blind { grid-column: 1; grid-row: 1 / span 2; }
+  .loadout { grid-column: 2; grid-row: 1; }
+  .play, .shop, .finish { grid-column: 2; grid-row: 2; }
+  .cards { grid-template-columns: repeat(8, minmax(0, 1fr)); padding: 8px 8px 16px; gap: 4px; }
+  .card { min-height: 65px; transform: translateY(var(--arc)) rotate(var(--tilt)); }
+  .card[aria-pressed="true"] { transform: translateY(-9px) rotate(var(--tilt)); }
+}
+@media (max-width: 380px) {
+  .table { padding-inline: max(9px, env(safe-area-inset-left)) max(9px, env(safe-area-inset-right)); }
+  .card { aspect-ratio: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .scored strong { animation: none; }
+}
