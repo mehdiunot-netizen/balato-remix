@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, blindFor, blinds, buy, continueRun, deck, evaluate, jokers, previewHand, restoreRun, start, useCards } from './game.mjs';
+import { advance, blindFor, blinds, buy, chooseAugure, continueRun, deck, evaluate, jokers, offeredPack, openPack, packs, previewHand, restoreRun, start, useCards } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -157,4 +157,35 @@ test('les figures et les as valent onze jetons', () => {
     const result = evaluate(cards('♠' + rank));
     assert.equal(result.chips - 8, Math.min(rank, 11));
   }
+});
+
+test('une pochette tirée par la seed survit à un rechargement et transforme une carte', () => {
+  const shop = { ...start('augures'), phase: 'shop', credits: 8 };
+  const id = offeredPack(shop);
+  const opened = openPack(shop, id);
+  assert.equal(opened.credits, 8 - packs[id].price);
+  assert.equal(opened.choices.length, packs[id].count);
+  assert.deepEqual(opened, openPack(shop, id));
+  assert.equal(openPack(shop, 1 - id), shop);
+  assert.deepEqual(new Set(Array.from({ length: 32 }, (_, i) => offeredPack({ ...shop, seed: String(i) }))),
+    new Set([0, 1]));
+  assert.equal(advance(opened), opened);
+  const saved = restoreRun(JSON.parse(JSON.stringify(opened)));
+  const choice = saved.choices[0];
+  const resolved = chooseAugure(saved, choice.id);
+  assert.equal(openPack(resolved, id), resolved);
+  const next = advance(resolved);
+  assert.equal([...next.hand, ...next.pile].find(card => card.id === choice.id).augure, 'prism');
+  assert.equal(chooseAugure(saved, null).credits, opened.credits);
+});
+
+test('Prisme agit seulement sur les cartes marquantes et Armure sur les cartes gardées', () => {
+  const [a, b, c, d, e] = cards('♥10', '♦10', '♣14', '♠4', '♣5');
+  const played = [{ ...a, augure: 'prism' }, b, { ...c, augure: 'prism' }];
+  const { mult, chips, steps } = evaluate(played, [1], {
+    hand: [...played, { ...d, augure: 'steel' }, { ...e, augure: 'steel' }], trace: true,
+  });
+  assert.equal(mult, (2 + 10) * 2.25 + 3);
+  assert.equal(chips, 35);
+  assert.deepEqual(steps.slice(1, 4).map(step => step.name), ['Prisme', 'Armure', 'Armure']);
 });

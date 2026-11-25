@@ -1,4 +1,4 @@
-import { cardChips, jokers } from './jokers.mjs?v=8';
+import { cardChips, jokers } from './jokers.mjs?v=9';
 export { jokers };
 
 const suits = ['♠', '♥', '♣', '♦'];
@@ -65,6 +65,15 @@ export function restoreRun(state) {
   return { ...state, seed: state.seed ?? createSeed(), legacy: state.legacy ?? !state.seed, catalogSize: 7 };
 }
 
+export const augures = {
+  prism: { name: 'Prisme', mark: '✧', text: '+10 au multiplicateur quand cette carte marque.' },
+  steel: { name: 'Armure', mark: '◆', text: '×1,5 au multiplicateur quand cette carte reste en main.' },
+};
+export const packs = [
+  { name: 'Pochette d’augures', price: 4, count: 3 },
+  { name: 'Grande pochette', price: 6, count: 5 },
+];
+
 export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, trace = false } = {}) {
   if (!cards.length || cards.length > 5) throw new RangeError('Choisir de 1 à 5 cartes.');
   const sorted = [...cards].sort((a, b) => b.rank - a.rank);
@@ -98,6 +107,16 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, t
   let mult = multiplier;
   let factor = 1;
   const steps = trace ? [{ type: 'base', chips: base, mult: multiplier, cardChips: chips - base }] : null;
+  for (const card of scoring) {
+    if (card.augure !== 'prism') continue;
+    mult += 10;
+    steps?.push({ type: 'augure', name: augures.prism.name, mult: 10 });
+  }
+  for (const card of context.held) {
+    if (card.augure !== 'steel') continue;
+    mult *= 1.5;
+    steps?.push({ type: 'augure', name: augures.steel.name, factor: 1.5 });
+  }
   const factors = [];
   for (const id of owned) {
     const [extraChips, extraMult, extraFactor] = jokers[id].bonus(scoring, context);
@@ -134,7 +153,10 @@ export function start(seed = createSeed()) {
 
 function deal(carry) {
   const blind = blindFor(carry);
-  const pile = shuffle(deck, seededRandom(carry.seed, 'deck', carry.round));
+  const pile = shuffle(deck, seededRandom(carry.seed, 'deck', carry.round)).map(card => {
+    const augure = carry.enhancements?.[card.id];
+    return augure ? { ...card, augure } : card;
+  });
   const hand = pile.splice(0, blind.size ?? 8);
   const plays = blind.plays ?? 4;
   const target = carry.legacy ? blind.target : Math.min(
@@ -205,6 +227,33 @@ export function buy(state, id) {
     owned: [...state.owned, id], offers: state.offers.filter(offer => offer !== id) };
 }
 
+export function offeredPack(state) {
+  if (state.phase !== 'shop' || state.packBought) return undefined;
+  const available = deck.length - Object.keys(state.enhancements ?? {}).length;
+  if (available < packs[0].count) return undefined;
+  const random = seededRandom(state.seed, 'pack-offer', state.round);
+  return available >= packs[1].count && random() < 0.25 ? 1 : 0;
+}
+
+export function openPack(state, id) {
+  const pack = packs[id];
+  if (!pack || offeredPack(state) !== id || state.credits < pack.price) return state;
+  const candidates = deck.filter(card => !state.enhancements?.[card.id]);
+  if (candidates.length < pack.count) return state;
+  const random = seededRandom(state.seed, 'augures', state.round);
+  const choices = shuffle(candidates, random).slice(0, pack.count)
+    .map((card, index) => ({ ...card, augure: index % 2 === 0 ? 'prism' : 'steel' }));
+  return { ...state, phase: 'pack', packBought: true, credits: state.credits - pack.price, choices };
+}
+
+export function chooseAugure(state, id) {
+  if (state.phase !== 'pack') return state;
+  const choice = state.choices.find(card => card.id === id);
+  if (!choice && id !== null) return state;
+  const enhancements = choice ? { ...state.enhancements, [choice.id]: choice.augure } : state.enhancements;
+  return { ...state, phase: 'shop', choices: [], enhancements };
+}
+
 export function continueRun(state) {
   if (state.phase !== 'win' || state.legacy || state.round !== CLASSIC_ROUNDS - 1) return state;
   return { ...state, phase: 'shop', endless: true };
@@ -213,5 +262,6 @@ export function continueRun(state) {
 export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
-    credits: state.credits, owned: state.owned, catalogSize: state.catalogSize });
+    credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
+    enhancements: state.enhancements });
 }

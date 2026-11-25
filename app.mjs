@@ -1,4 +1,4 @@
-import { advance, blindFor, buy, continueRun, jokers, previewHand, restoreRun, start, useCards } from './game.mjs?v=8';
+import { advance, augures, blindFor, buy, chooseAugure, continueRun, jokers, offeredPack, openPack, packs, previewHand, restoreRun, start, useCards } from './game.mjs?v=9';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -74,7 +74,7 @@ function persist() {
 
 function render(focus, scored = false) {
   const blind = blindFor(state);
-  const activations = state.last?.steps?.filter(step => step.type !== 'base') ?? [];
+  const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
   const loadout = state.owned.map(id => {
     const { mark, name, text, theme } = jokers[id];
     const activation = activations.findIndex(step => step.id === id);
@@ -92,11 +92,12 @@ function render(focus, scored = false) {
         <div class="hand-info"><h3>Votre main</h3><span class="pile"><i aria-hidden="true"></i>${state.pile.length} en pioche</span></div>
         <div class="cards">${cards.map((card, i) => {
           const rank = faces[card.rank] || card.rank;
-          return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
-            aria-label="${court[card.rank]?.[1] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}" aria-pressed="${selected.has(card.id)}"
+          return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''} ${card.augure || ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
+            aria-label="${court[card.rank]?.[1] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}${card.augure ? ' · ' + augures[card.augure].name : ''}" aria-pressed="${selected.has(card.id)}"
             ${selected.size === 5 && !selected.has(card.id) ? 'disabled' : ''}>
             <span class="rank" aria-hidden="true">${rank}<small>${card.suit}</small></span>
             <span class="card-art" aria-hidden="true">${cardArt(card)}</span>
+            ${card.augure ? `<span class="augure-mark" aria-hidden="true">${augures[card.augure].mark}</span>` : ''}
             <span class="rank opposite" aria-hidden="true">${rank}<small>${card.suit}</small></span>
           </button>`;
         }).join('')}</div>
@@ -108,13 +109,29 @@ function render(focus, scored = false) {
           <button data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser <small>${state.discards} restantes</small></button>
         </div>
       </section>`;
+  } else if (state.phase === 'pack') {
+    content = `
+      <section class="shop">
+        <header class="shop-header"><div><h3 tabindex="-1">Augures</h3><p>Améliore une carte de ton paquet.</p></div>
+          <button data-action="skip-pack">Passer</button></header>
+        <ul class="offers">${state.choices.map(card => {
+          const augure = augures[card.augure];
+          return `<li><strong>${faces[card.rank] || card.rank}${card.suit} · ${augure.name}</strong>
+            <small>${augure.text}</small><button class="primary" data-augure="${card.id}">Choisir</button></li>`;
+        }).join('')}</ul>
+      </section>`;
   } else if (state.phase === 'shop') {
+    const packId = offeredPack(state);
+    const pack = packs[packId];
     content = `
       <section class="shop">
         <header class="shop-header">
           <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits</p></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
+        ${pack ? `<div class="pack-shelf" aria-label="Pochettes">
+          <button data-pack="${packId}" ${state.credits < pack.price ? 'disabled' : ''}>
+            ${pack.name} · ${pack.price} cr.</button></div>` : ''}
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
           const full = state.owned.length === 3;
@@ -173,9 +190,9 @@ game.addEventListener('click', event => {
     const lines = steps.map(step => {
       if (step.type === 'base') return step.chips + ' jetons de la main + ' + step.cardChips +
         ' des cartes · multiplicateur de base ' + step.mult;
-      const bonus = step.type === 'factor' ? '×' + scoreFormat.format(step.factor) :
+      const bonus = step.factor ? '×' + scoreFormat.format(step.factor) :
         [step.chips ? '+' + step.chips + ' jetons' : '', step.mult ? '+' + step.mult + ' au multiplicateur' : ''].filter(Boolean).join(' · ');
-      return jokers[step.id].name + ' · ' + bonus;
+      return (step.name ?? jokers[step.id].name) + ' · ' + bonus;
     });
     scoreDialog.querySelector('ol').replaceChildren(...lines.map(line => {
       const item = document.createElement('li');
@@ -196,6 +213,9 @@ game.addEventListener('click', event => {
 
   let next = state;
   if (target.dataset.buy !== undefined) next = buy(state, Number(target.dataset.buy));
+  else if (target.dataset.pack !== undefined) next = openPack(state, Number(target.dataset.pack));
+  else if (target.dataset.augure !== undefined) next = chooseAugure(state, target.dataset.augure);
+  else if (action === 'skip-pack') next = chooseAugure(state, null);
   else if (action === 'advance') next = advance(state);
   else if (action === 'endless') next = continueRun(state);
   else if (action === 'restart') {
