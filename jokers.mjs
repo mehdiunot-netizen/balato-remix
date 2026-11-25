@@ -1,4 +1,4 @@
-export const cardChips = card => card.rank === 14 ? 11 : Math.min(card.rank, 10);
+export const cardChips = card => Math.min(card.rank, 11);
 
 // Append entries to preserve the numeric identifiers stored in saves.
 export const jokers = [

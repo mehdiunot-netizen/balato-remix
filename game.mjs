@@ -1,4 +1,4 @@
-import { cardChips, jokers } from './jokers.mjs';
+import { cardChips, jokers } from './jokers.mjs?v=8';
 export { jokers };
 
 const suits = ['♠', '♥', '♣', '♦'];

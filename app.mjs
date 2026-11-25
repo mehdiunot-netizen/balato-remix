@@ -1,4 +1,4 @@
-import { advance, blindFor, buy, continueRun, jokers, previewHand, restoreRun, start, useCards } from './game.mjs?v=7';
+import { advance, blindFor, buy, continueRun, jokers, previewHand, restoreRun, start, useCards } from './game.mjs?v=8';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');

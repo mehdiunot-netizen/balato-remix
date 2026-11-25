@@ -23,7 +23,7 @@ test('jetons, cartes marquantes et ordre des bonus', () => {
   assert.deepEqual(evaluate(cards('♥10', '♦10', '♥14'), [4, 5]),
     { name: 'Paire', chips: 75, mult: 4, total: 300 });
   assert.deepEqual(evaluate(cards('♥10', '♥11', '♥12', '♥13', '♥14'), [1, 3]),
-    { name: 'Quinte flush', chips: 141, mult: 22, total: 3102 });
+    { name: 'Quinte flush', chips: 144, mult: 22, total: 3168 });
 });
 
 test('défausse, pioche et perte après la dernière main', () => {
@@ -150,4 +150,11 @@ test('les nouveaux jokers utilisent les cartes gardées et le numéro de main da
   ]);
   assert.equal(previewHand({ ...state, plays: 3 }, played).mult, 6);
   assert.equal(restoreRun({ ...state, catalogSize: undefined }).catalogSize, 7);
+});
+
+test('les figures et les as valent onze jetons', () => {
+  for (let rank = 2; rank <= 14; rank++) {
+    const result = evaluate(cards('♠' + rank));
+    assert.equal(result.chips - 8, Math.min(rank, 11));
+  }
 });
