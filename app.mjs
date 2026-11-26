@@ -399,7 +399,7 @@ function render(focus, scored = false) {
         </div>
         ` : '<p class="casino-panel-note">3 petites → 3 moyennes → 3 boss · progression horizontale</p>'}
       <div class="side-controls">
-        <span class="wallet">${state.credits}${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
+        <span class="wallet">&#36;${state.credits}${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
         <button type="button" data-action="game-info">Partie Infos</button>
         <button type="button" data-action="rules">Options</button>
         ${state.last?.steps ? '<button type="button" data-action="score-detail">Détail du score</button>' : ''}
