@@ -397,7 +397,7 @@ test('Le Multiplieur commence avec un polychrome qui multiplie le total', () => 
   const sold = sellJoker({ ...s, phase: 'shop', credits: 0 }, 0);
   assert.deepEqual(sold.polychromeSlots, []);
 });
-test('Plan copie le joker de droite et ADN ajoute une seule carte permanente', () => {
+test('Plan copie le joker de droite et ADN ajoute une copie en main et au paquet', () => {
   const plan = jokers.findIndex(j => j.key === 'plan');
   const normal = evaluate(deck.slice(0, 1), [1]);
   const copied = evaluate(deck.slice(0, 1), [plan, 1]);
@@ -411,6 +411,12 @@ test('Plan copie le joker de droite et ADN ajoute une seule carte permanente', (
   assert.equal(after.bonusCards.length, 1);
   assert.equal(after.bonusCards[0].rank, first.rank);
   assert.notEqual(after.bonusCards[0].id, first.id);
+  assert.equal(after.hand.length, s.hand.length, 'la copie remplace la pioche normale');
+  assert.equal(after.pile.length, s.pile.length, 'ADN ne consomme pas la prochaine carte');
+  assert.ok(after.hand.some(card => card.id === after.bonusCards[0].id),
+    'la copie permanente rejoint la main immédiatement');
+  assert.equal(useCards(after, [after.hand[0].id], 'play').bonusCards.length, 1,
+    'ADN ne se redéclenche pas à la deuxième main');
   const afterNext = advance({ ...after, phase: 'shop' });
   assert.ok(deckFor(afterNext).some(c => c.id === after.bonusCards[0].id));
   const notSingle = useCards(s, s.hand.slice(0, 2).map(c => c.id), 'play');
