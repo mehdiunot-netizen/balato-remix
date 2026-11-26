@@ -156,6 +156,9 @@ function moveHandCard(run, sourceId, targetId) {
 function render(focus, scored = false) {
   const casinoChoices = state.phase === 'casino' ? casinoOffers(state) : [];
   const casinoTiles = state.phase === 'casino' ? casinoBoard(state) : [];
+  const playCards = state.phase === 'play' ? displayedHand(state) : [];
+  const playPreview = state.phase === 'play' && selected.size
+    ? previewHand(state, playCards.filter(card => selected.has(card.id))) : null;
   const blind = state.phase === 'casino' ? casinoChoices[0]?.blind : blindFor(state);
   const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
   const loadout = state.owned.map((id, index) => {
@@ -191,8 +194,7 @@ function render(focus, scored = false) {
 
   let content;
   if (state.phase === 'play') {
-    const cards = displayedHand(state);
-    const preview = selected.size ? previewHand(state, cards.filter(c => selected.has(c.id))) : null;
+    const cards = playCards;
     content = `
       <section class="play" aria-label="Main en cours">
         <div class="hand-info"><h3>Votre main</h3></div>
@@ -207,9 +209,7 @@ function render(focus, scored = false) {
             <span class="rank opposite" aria-hidden="true">${rank}<small>${card.suit}</small></span>
           </button>`;
         }).join('')}</div>
-        <div class="preview" aria-live="polite">${preview ?
-          `<strong>${preview.name}</strong><span class="equation"><span class="chips">${preview.chips} jetons</span> × <span class="mult">${scoreFormat.format(preview.mult)}</span> ${Number.isInteger(preview.mult) ? '=' : '≈'} <b>${preview.total}</b></span>` :
-          '<span>Sélectionnez de 1 à 5 cartes.</span>'}</div>
+        <div class="preview" aria-label="${cards.length} cartes en main">${cards.length}/${blind.size ?? 8}</div>
         <div class="actions" aria-label="Commandes de la main">
           <button class="primary hand-action" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
           <button type="button" class="deck-counter" data-action="deck-view"
@@ -371,12 +371,27 @@ function render(focus, scored = false) {
       <h2 id="blind-name" tabindex="-1">${state.phase === 'casino' ? 'Carte des 9 blindes' : blind.name}</h2>
       ${activeCharacter.id !== 'classique' ? `<p class="character-status" title="${activeCharacter.text}"><span aria-hidden="true">${activeCharacter.mark}</span> ${activeCharacter.name}</p>` : ''}
       ${state.phase !== 'casino' && blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
-      ${state.phase !== 'casino' ? `<div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>` : ''}
-      ${state.phase !== 'casino' ? `<progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>` : '<p class="casino-panel-note">3 petites → 3 moyennes → 3 boss · progression horizontale</p>'}
-      ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
+      ${state.phase !== 'casino' ? `
+        <div class="score ${scored ? 'scored' : ''}">
+          <span>Manche score</span><strong>${scoreFormat.format(state.score)}</strong><small>/ ${scoreFormat.format(blind.target)}</small>
+        </div>
+        <div class="bl-calculation" aria-live="polite" aria-label="Calcul de la main">
+          <div class="bl-hand-name">${playPreview?.name ?? (state.phase === 'play' ? 'Choisis tes cartes' : (state.last?.name ?? 'Main'))}</div>
+          <div class="bl-chip-mult">
+            <span class="bl-chips" aria-label="${playPreview?.chips ?? 0} jetons">${scoreFormat.format(playPreview?.chips ?? 0)}</span>
+            <span class="bl-times" aria-hidden="true">×</span>
+            <span class="bl-mult" aria-label="multiplicateur ${playPreview?.mult ?? 0}">${scoreFormat.format(playPreview?.mult ?? 0)}</span>
+          </div>
+        </div>
+        <div class="bl-metrics">
+          <div><span>Mains</span><strong>${state.plays ?? 0}</strong></div>
+          <div><span>Défausses</span><strong>${state.discards ?? 0}</strong></div>
+        </div>
+        ` : '<p class="casino-panel-note">3 petites → 3 moyennes → 3 boss · progression horizontale</p>'}
       <div class="side-controls">
-        <span class="wallet">${state.credits} crédits${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
-        <button type="button" data-action="rules">Règles</button>
+        <span class="wallet">${state.credits}${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
+        <button type="button" data-action="game-info">Partie Infos</button>
+        <button type="button" data-action="rules">Options</button>
         ${state.last?.steps ? '<button type="button" data-action="score-detail">Détail du score</button>' : ''}
       </div>
     </section>
@@ -684,6 +699,22 @@ game.addEventListener('click', event => {
   if (action === 'rules') {
     document.querySelector('#current-seed').textContent = state.seed;
     rules.showModal();
+    return;
+  }
+
+  if (action === 'game-info') {
+    const history = state.handHistory ?? [];
+    const dialog = document.querySelector('#game-info-dialog');
+    dialog.querySelector('#game-info-summary').textContent =
+      history.length + ' mains jouées · ' + (state.round >= 0 ? 'Mise ' + (Math.floor(state.round / 3) + 1) : 'Début de partie');
+    dialog.querySelector('#game-info-list').replaceChildren(...history.slice().reverse().map((entry, i) => {
+      const item = document.createElement('li');
+      item.textContent = 'Main ' + (history.length - i) + ' · ' + entry.name +
+        ' · ' + scoreFormat.format(entry.chips) + ' × ' +
+        scoreFormat.format(entry.mult) + ' = ' + scoreFormat.format(entry.total);
+      return item;
+    }));
+    dialog.showModal();
     return;
   }
 
