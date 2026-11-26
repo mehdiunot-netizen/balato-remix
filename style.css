@@ -1691,3 +1691,30 @@ button.primary {
     max-height: max(0px, calc(25dvh - 25px));
   }
 }
+
+
+/* v28 — booster pack choices fit in the existing non-scrolling play shell. */
+.shop .joker-pack-options {
+  grid-template-columns: repeat(auto-fit, minmax(106px, 1fr));
+  align-items: stretch;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.shop .joker-pack-options > li {
+  min-width: 0;
+  gap: 3px;
+  padding: 4px;
+}
+.shop .joker-pack-options .joker-illustration {
+  margin-inline: auto;
+}
+.shop .joker-pack-options > li > strong,
+.shop .joker-pack-options > li > small {
+  overflow-wrap: anywhere;
+}
+.shop .joker-pack-options > li > button { width: 100%; min-height: 34px; }
+@media (orientation: landscape) and (max-height: 360px) {
+  .shop .joker-pack-options { grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); }
+  .shop .joker-pack-options > li { min-height: 88px; }
+  .shop .joker-pack-options > li > small { font-size: .61rem; }
+}
