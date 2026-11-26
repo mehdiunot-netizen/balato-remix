@@ -2118,9 +2118,8 @@ button.primary {
 }
 
 
-/* v32 — prevent Joker cards from covering preceding cards on compact iPhone layouts.
-   Three normal cards remain fully accessible without panning; larger negative
-   collections preserve horizontal scrolling instead of clipping their contents. */
+/* v33 — the first five Jokers remain fully separated. From the sixth onward,
+   use a compact overlapping fan; keep very large collections reachable. */
 .loadout .joker-collection .joker-fan {
   gap: clamp(3px, .7vw, 8px);
   padding-inline: 3px;
@@ -2131,8 +2130,16 @@ button.primary {
   flex: 0 0 clamp(46px, 7vw, 69px);
   width: clamp(46px, 7vw, 69px);
 }
-@media (orientation: landscape) {
-  #game:has(> .play) .joker-collection .joker-fan:not(:has(> .joker-stack-card:nth-child(4))) > .joker-stack-card {
-    flex-shrink: 1;
-  }
+.loadout .joker-collection .joker-fan:not(:has(> .joker-stack-card:nth-child(6))) {
+  overflow-x: hidden;
+  justify-content: center;
+}
+.loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) {
+  gap: 0;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) > .joker-stack-card:not(:first-child) {
+  margin-left: calc(-1 * clamp(11px, 1.8vw, 22px)) !important;
 }
