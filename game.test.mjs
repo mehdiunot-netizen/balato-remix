@@ -423,6 +423,48 @@ test('Plan copie le joker de droite et ADN ajoute une copie en main et au paquet
   const notSingle = useCards(s, s.hand.slice(0, 2).map(c => c.id), 'play');
   assert.equal(notSingle.bonusCards, undefined);
 });
+test('ADN respecte la taille de main et se cumule avec les jokers copieurs', () => {
+  const original = start('ADN-MAINS', 'as-copieur');
+  const dna = jokers.findIndex(j => j.key === 'adn');
+  const plan = jokers.findIndex(j => j.key === 'plan');
+  const blueprint = jokers.findIndex(j => j.key === 'blueprint');
+  const brainstorm = jokers.findIndex(j => j.key === 'brainstorm');
+  const firstId = original.hand[0].id;
+
+  // ADN alone does not replace extra cards once the normal hand is refilled.
+  const lone = useCards(original, [firstId], 'play');
+  assert.equal(lone.hand.length, 8);
+  assert.equal(lone.bonusCards.length, 1);
+
+  for (const owned of [[dna, dna], [plan, dna], [blueprint, dna],
+                       [dna, brainstorm], [plan, blueprint, dna]]) {
+    const state = { ...original, owned };
+    const next = useCards(state, [firstId], 'play');
+    const expected = owned.length === 3 ? 3 : 2;
+    assert.equal(next.bonusCards.length, expected, 'une carte par activation ADN');
+    assert.equal(next.hand.length, 7 + expected, 'les copies peuvent dépasser 8');
+    assert.equal(next.pile.length, state.pile.length, 'pas de pioche si main pleine');
+    assert.equal(new Set(next.bonusCards.map(card => card.id)).size, expected);
+    assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(next))), next);
+    assert.equal(deckFor(next).length, deckFor(state).length + expected);
+  }
+
+  // With a partial hand, draw only the missing cards up to the limit.
+  const shortState = { ...original, hand: original.hand.slice(0, 4) };
+  const refilled = useCards(shortState, [firstId], 'play');
+  assert.equal(refilled.hand.length, 8);
+  assert.equal(refilled.pile.length, original.pile.length - 4);
+
+  // The copied card keeps its actual enhancement, not only rank and suit.
+  const enhanced = { ...original, hand: [{ ...original.hand[0], augure: 'steel' }, ...original.hand.slice(1)] };
+  const copied = useCards(enhanced, [firstId], 'play');
+  assert.equal(copied.bonusCards[0].augure, 'steel');
+
+  const multiCardPlay = useCards({ ...original, owned: [plan, dna] },
+    original.hand.slice(0, 2).map(card => card.id), 'play');
+  assert.equal(multiCardPlay.bonusCards, undefined);
+});
+
 test('Le Tricheur garde tous les bonus de première main et les sauvegardes existantes', () => {
   const first = jokers.findIndex(j => j.name === 'Feu de départ');
   const a = deck[0];
