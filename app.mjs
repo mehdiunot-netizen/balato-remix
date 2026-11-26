@@ -8,6 +8,7 @@ const scoreFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 })
 const faces = { 11: 'V', 12: 'D', 13: 'R', 14: 'A' };
 let state = restore();
 const selected = new Set();
+let saleNotice = null;
 const table = document.querySelector('.table');
 const lobby = document.querySelector('.lobby');
 const enter = document.querySelector('#enter');
@@ -30,6 +31,7 @@ document.querySelector('#cancel-seed').addEventListener('click', () => seedDialo
 document.querySelector('#seed-form').addEventListener('submit', event => {
   event.preventDefault();
   state = start(seedInput.value.trim() || undefined);
+  saleNotice = null;
   seedDialog.close();
   showTable();
 });
@@ -204,7 +206,7 @@ function render(focus, scored = false) {
       <progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>
       ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
       <div class="side-controls">
-        <span class="wallet">${state.credits} crédits</span>
+        <span class="wallet">${state.credits} crédits${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
         <button type="button" data-action="rules">Règles</button>
         ${state.last?.steps ? '<button type="button" data-action="score-detail">Détail du score</button>' : ''}
       </div>
@@ -242,6 +244,8 @@ function cleanupJokerDrag(pointerId, x, y, cancelled = false) {
   if (!shouldSell) return;
   const next = sellJoker(state, drag.slot);
   if (next === state) return;
+  const earned = next.credits - state.credits;
+  saleNotice = '+' + earned + ' crédits';
   state = next;
   selected.clear();
   persist();
@@ -270,6 +274,14 @@ game.addEventListener('pointerdown', event => {
     card, started: false, zone: null, ghost: null };
   try { card.setPointerCapture(event.pointerId); } catch { /* Pointer capture unavailable. */ }
 });
+
+
+/* On iOS keep the viewport fixed; only panels with their own scrollbar pan. */
+document.addEventListener('touchmove', event => {
+  if (!event.cancelable) return;
+  const scrollArea = event.target.closest?.('.shop .offers, .prune-cards, .loadout, .blind, .finish, dialog.rules');
+  if (jokerDrag || !scrollArea) event.preventDefault();
+}, { passive: false });
 
 document.addEventListener('pointermove', event => {
   const drag = jokerDrag;
@@ -377,6 +389,8 @@ game.addEventListener('click', event => {
   }
   else if (action === 'play' || action === 'discard') next = useCards(state, [...selected], action);
   if (next === state) return;
+  const earned = next.credits - state.credits;
+  saleNotice = target.dataset.sell !== undefined ? '+' + earned + ' crédits' : null;
   state = next;
   selected.clear();
   persist();
