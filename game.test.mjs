@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, blindFor, blinds, buy, chooseAugure, chooseEclipse, continueRun, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards } from './game.mjs';
+import { advance, applyAugure, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -172,10 +172,16 @@ test('une pochette tirée par la seed survit à un rechargement et transforme un
   assert.equal(advance(opened), opened);
   const saved = restoreRun(JSON.parse(JSON.stringify(opened)));
   const choice = saved.choices.find(card => card.augure !== 'prune');
-  const resolved = chooseAugure(saved, choice.id);
+  const picking = chooseAugure(saved, choice.id);
+  assert.equal(picking.phase, 'augure-target');
+  assert.equal(cancelAugureTarget(picking).phase, 'pack');
+  const target = deckFor(saved).find(card => card.id !== choice.id);
+  const resolved = applyAugure(picking, target.id);
+  assert.equal(resolved.enhancements[target.id], choice.augure);
+  assert.equal(resolved.enhancements[choice.id], undefined);
   assert.equal(openPack(resolved, id), resolved);
   const next = advance(resolved);
-  assert.equal([...next.hand, ...next.pile].find(card => card.id === choice.id).augure, choice.augure);
+  assert.equal([...next.hand, ...next.pile].find(card => card.id === target.id).augure, choice.augure);
   assert.equal(chooseAugure(saved, null).credits, opened.credits);
 });
 
@@ -293,4 +299,45 @@ test('vente en boutique, slots négatifs, copie et sauvegardes', () => {
   const playing={...shop,phase:'play'};
   assert.equal(sellJoker(playing,0),playing);
   assert.deepEqual(sellJoker({...shop,owned:[0,0],negativeSlots:[0]},0).negativeSlots,[]);
+});
+
+test('consommables : deux emplacements, achat, activation et sauvegarde', () => {
+  let shop = { ...start('DEUX-SLOTS'), phase: 'shop', credits: 40 };
+  const first = consumableOffer(shop);
+  shop = buyConsumable(shop, first.id);
+  assert.deepEqual(shop.consumables, [first.id]);
+  assert.equal(shop.credits, 40 - first.price);
+  assert.equal(buyConsumable(shop, first.id), shop);
+  shop = { ...shop, consumableBought: false, seed: 'AUTRE' };
+  const second = consumableOffer(shop);
+  shop = buyConsumable(shop, second.id);
+  assert.equal(shop.consumables.length, 2);
+  const full = { ...shop, consumableBought: false };
+  assert.equal(buyConsumable(full, second.id), full);
+  const round = advance(restoreRun(JSON.parse(JSON.stringify(shop))));
+  assert.deepEqual(round.consumables, shop.consumables);
+  const slot = round.consumables.indexOf('bourse') >= 0 ? round.consumables.indexOf('bourse') : 0;
+  const used = useConsumable(round, slot);
+  assert.equal(used.consumables.length, 1);
+  const kind = round.consumables[slot];
+  if (kind === 'bourse') assert.equal(used.credits, round.credits + 5);
+  if (kind === 'relance') assert.equal(used.discards, round.discards + 1);
+  if (kind === 'souffle') assert.equal(used.plays, round.plays + 1);
+  assert.equal(useConsumable(round, 2), round);
+  const finished = { ...round, phase: 'lose' };
+  assert.equal(useConsumable(finished, slot), finished);
+});
+
+test('Augure : le joueur choisit la carte cible indépendamment de la pochette', () => {
+  const base = { ...start('CIBLE-CHOISIE'), phase: 'shop', credits: 10 };
+  const opened = openPack(base, offeredPack(base));
+  const choice = opened.choices.find(card => card.augure !== 'prune');
+  const pending = chooseAugure(opened, choice.id);
+  assert.equal(pending.phase, 'augure-target');
+  assert.equal(applyAugure(pending, 'inconnue'), pending);
+  const chosen = deckFor(base).find(card => card.id !== choice.id);
+  const result = applyAugure(pending, chosen.id);
+  assert.equal(result.enhancements[chosen.id], choice.augure);
+  assert.equal(result.enhancements[choice.id], undefined);
+  assert.equal(result.phase, 'shop');
 });

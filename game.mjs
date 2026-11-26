@@ -78,6 +78,42 @@ export const packs = [
   { name: 'Grande pochette', price: 6, count: 5 },
 ];
 
+// Two reusable inventory slots; purchase offers follow the same seed as the run.
+export const consumables = [
+  { id: 'bourse', name: 'Bourse', mark: '¤', text: 'Gagne 5 crédits.', price: 4 },
+  { id: 'relance', name: 'Relance', mark: '↺', text: '+1 défausse pour cette blinde.', price: 4 },
+  { id: 'souffle', name: 'Souffle', mark: '✷', text: '+1 main pour cette blinde.', price: 5 },
+];
+export const CONSUMABLE_SLOTS = 2;
+
+export function consumableOffer(state) {
+  if (state.phase !== 'shop' || state.consumableBought) return undefined;
+  const random = seededRandom(state.seed, 'consumable-offer', state.round);
+  return consumables[Math.floor(random() * consumables.length)];
+}
+
+export function buyConsumable(state, id) {
+  const offer = consumableOffer(state);
+  if (!offer || id !== offer.id || state.credits < offer.price ||
+      (state.consumables ?? []).length >= CONSUMABLE_SLOTS) return state;
+  return { ...state, credits: state.credits - offer.price,
+    consumables: [...(state.consumables ?? []), id], consumableBought: true };
+}
+
+export function useConsumable(state, slot) {
+  if (!['play', 'shop'].includes(state.phase) || !Number.isInteger(slot)) return state;
+  const inventory = state.consumables ?? [];
+  if (slot < 0 || slot >= inventory.length) return state;
+  const id = inventory[slot];
+  if (id !== 'bourse' && state.phase !== 'play') return state;
+  const next = { ...state, consumables: inventory.filter((_, i) => i !== slot) };
+  if (id === 'bourse') return { ...next, credits: state.credits + 5 };
+  if (id === 'relance') return { ...next, discards: state.discards + 1 };
+  if (id === 'souffle') return { ...next, plays: state.plays + 1 };
+  return state;
+}
+
+
 export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, trace = false } = {}) {
   if (!cards.length || cards.length > 5) throw new RangeError('Choisir de 1 à 5 cartes.');
   const sorted = [...cards].sort((a, b) => b.rank - a.rank);
@@ -156,7 +192,7 @@ export function previewHand(state, cards, trace = false) {
 }
 
 export function start(seed = createSeed()) {
-  return deal({ seed, round: 0, credits: 3, owned: [], catalogSize: jokers.length });
+  return deal({ seed, round: 0, credits: 3, owned: [], consumables: [], catalogSize: jokers.length });
 }
 
 function deal(carry) {
@@ -171,7 +207,7 @@ function deal(carry) {
     blind.target, reachableScore(hand, pile, plays, carry.owned),
   );
   return { ...carry, target, phase: 'play', score: 0, plays, discards: blind.discards ?? 3,
-    hand, pile, offers: [], last: null, reward: 0 };
+    consumableBought: false, hand, pile, offers: [], last: null, reward: 0 };
 }
 
 // Simulate a legal sequence with the actual draw order. Its score is a lower
@@ -291,11 +327,26 @@ export function openPack(state, id) {
 
 export function chooseAugure(state, id) {
   if (state.phase !== 'pack') return state;
+  if (id === null) return { ...state, phase: 'shop', choices: [], pendingAugure: null };
   const choice = state.choices.find(card => card.id === id);
-  if (!choice && id !== null) return state;
-  if (choice?.augure === 'prune') return { ...state, phase: 'prune' };
-  const enhancements = choice ? { ...state.enhancements, [choice.id]: choice.augure } : state.enhancements;
-  return { ...state, phase: 'shop', choices: [], enhancements };
+  if (!choice) return state;
+  if (choice.augure === 'prune') return { ...state, phase: 'prune' };
+  // Select effect first, then let the player pick which card receives it.
+  return { ...state, phase: 'augure-target', pendingAugure: choice.augure };
+}
+
+export function cancelAugureTarget(state) {
+  if (state.phase !== 'augure-target') return state;
+  return { ...state, phase: 'pack', pendingAugure: null };
+}
+
+export function applyAugure(state, cardId) {
+  if (state.phase !== 'augure-target' || !augures[state.pendingAugure] ||
+      state.pendingAugure === 'prune' ||
+      !remainingDeck(state).some(card => card.id === cardId) ||
+      state.enhancements?.[cardId]) return state;
+  return { ...state, phase: 'shop', choices: [], pendingAugure: null,
+    enhancements: { ...(state.enhancements ?? {}), [cardId]: state.pendingAugure } };
 }
 
 export function pruneDeck(state, ids) {
@@ -350,5 +401,6 @@ export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
     credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
+    consumables: state.consumables ?? [],
     enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots });
 }
