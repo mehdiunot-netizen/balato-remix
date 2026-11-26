@@ -41,3 +41,11 @@ Aucune fusion de la pull request #1 tant que le test réel n'est pas validé. Co
 - [ ] Toucher simplement un joker : ses détails peuvent encore s'ouvrir, sans vente.
 - [ ] Vérifier aussi la vente d'un joker négatif, les emplacements restants et la persistance après rechargement.
 - [ ] Vérifier les gestes en paysage sur un véritable iPhone 11 ; les tests automatiques du moteur ne remplacent pas ce contrôle.
+
+## v17 — décor, consommables et ciblage Augures
+- [ ] Le décor de table remplace les bordures autour des principaux panneaux ; les cartes et les boutons restent lisibles en mode paysage.
+- [ ] Deux emplacements « Consommables 0/2 » apparaissent même vides ; acheter Bourse/Relance/Souffle en boutique, puis utiliser un objet et vérifier l'effet.
+- [ ] La limite 2/2 ne peut pas être dépassée ; l'inventaire reste au changement de blinde, après sauvegarde et rechargement.
+- [ ] Ouvrir une pochette d'Augures, choisir un effet, puis choisir **librement** une carte précise du paquet et vérifier que seule celle-là reçoit l'effet.
+- [ ] Vérifier que « Fil coupé » continue à retirer les cartes choisies.
+- [ ] Glisser un joker à vendre : la fenêtre ne bouge pas, le carré « Vendre » marche et le gain de crédits est lisible.

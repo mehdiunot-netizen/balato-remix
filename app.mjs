@@ -1,4 +1,4 @@
-import { advance, augures, blindFor, buy, chooseAugure, chooseEclipse, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, start, useCards } from './game.mjs?v=14';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, consumables, CONSUMABLE_SLOTS, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs?v=17';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -98,6 +98,17 @@ function render(focus, scored = false) {
       ${name}${negative ? ' · Négatif' : ''}</strong>${state.phase === 'shop' ? '<span class="drag-hint" aria-hidden="true">⇢ Glisser</span>' : ''}</summary><small>${text}</small>${state.phase === "shop" ? `<button type="button" class="sell-joker" data-sell="${index}" aria-label="Vendre ${name} pour ${Math.max(1, Math.floor(jokers[id].price / 2))} crédits">Vendre · +${Math.max(1, Math.floor(jokers[id].price / 2))} cr.</button>` : ""}</details></li>`;
   }).join('');
 
+  const inventory = state.consumables ?? [];
+  const consumableSlots = Array.from({ length: CONSUMABLE_SLOTS }, (_, index) => {
+    const item = consumables.find(value => value.id === inventory[index]);
+    if (!item) return '<span class="consumable-empty" aria-label="Emplacement de consommable vide">+</span>';
+    const usable = item.id === 'bourse' || state.phase === 'play';
+    const allowed = usable && (state.phase === 'play' || state.phase === 'shop');
+    return `<button type="button" class="consumable-item" data-use-consumable="${index}"
+      title="${item.text}" aria-label="Utiliser ${item.name} : ${item.text}" ${allowed ? '' : 'disabled'}>
+      <strong>${item.mark} ${item.name}</strong><small>${allowed ? 'Utiliser' : 'Prochaine blinde'}</small></button>`;
+  }).join('');
+
   let content;
   if (state.phase === 'play') {
     const cards = [...state.hand].sort((a, b) => b.rank - a.rank || a.suit.localeCompare(b.suit));
@@ -138,6 +149,18 @@ function render(focus, scored = false) {
             <button class="primary" data-eclipse="${effect}">Appliquer</button></li>`;
         }).join('')}</ul>
       </section>`;
+  } else if (state.phase === 'augure-target') {
+    const effect = augures[state.pendingAugure];
+    const eligible = deckFor(state).filter(card => !state.enhancements?.[card.id]);
+    content = `
+      <section class="shop augure-target-shop">
+        <header class="shop-header"><div><h3 tabindex="-1">Choisis ta carte</h3>
+          <p>${effect.name} · ${effect.text}</p></div>
+          <button data-action="back-augure-target">Retour</button></header>
+        <div class="prune-cards target-cards" aria-label="Cartes à améliorer">${eligible.map(card => `
+          <button data-augure-target="${card.id}" aria-label="Améliorer ${faces[card.rank] || card.rank} de ${names[card.suit]} avec ${effect.name}">
+            ${faces[card.rank] || card.rank}${card.suit}</button>`).join('')}</div>
+      </section>`;
   } else if (state.phase === 'prune') {
     const limit = removableCount(state);
     content = `
@@ -157,25 +180,29 @@ function render(focus, scored = false) {
           <button data-action="skip-pack">Passer</button></header>
         <ul class="offers augure-options">${state.choices.map(card => {
           const augure = augures[card.augure];
-          return `<li><span class="augure-emblem augure-${card.augure}" aria-hidden="true"><span>${augure.mark}</span></span><strong>${card.suit ? (faces[card.rank] || card.rank) + card.suit + ' · ' : ''}${augure.name}</strong>
-            <small>${augure.text}</small><button class="primary" data-augure="${card.id}">Choisir</button></li>`;
+          return `<li><span class="augure-emblem augure-${card.augure}" aria-hidden="true"><span>${augure.mark}</span></span><strong>${augure.name}</strong>
+            <small>${augure.text}</small><button class="primary" data-augure="${card.id}">${card.augure === 'prune' ? 'Choisir' : 'Choisir l’effet'}</button></li>`;
         }).join('')}</ul>
       </section>`;
   } else if (state.phase === 'shop') {
     const packId = offeredPack(state);
     const pack = packs[packId];
     const eclipse = eclipseOffer(state);
+    const consumable = consumableOffer(state);
     content = `
       <section class="shop">
         <header class="shop-header ${scored ? 'blind-cleared' : ''}">
           <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits${state.goldReward ? ' (dont ' + state.goldReward + ' Ducat)' : ''}</p></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
-        ${pack || eclipse ? `<div class="pack-shelf" aria-label="Pochettes">
+        ${pack || eclipse || consumable ? `<div class="pack-shelf" aria-label="Pochettes et consommables">
           ${pack ? `<button data-pack="${packId}" ${state.credits < pack.price ? 'disabled' : ''}>
             ${pack.name} · ${pack.price} cr.</button>` : ''}
           ${eclipse ? `<button data-action="open-eclipse" ${state.credits < ECLIPSE_PRICE ? 'disabled' : ''}>
-            Pack des Éclipses · ${ECLIPSE_PRICE} cr.</button>` : ''}</div>` : ''}
+            Pack des Éclipses · ${ECLIPSE_PRICE} cr.</button>` : ''}
+          ${consumable ? `<button data-buy-consumable="${consumable.id}"
+            ${state.credits < consumable.price || (state.consumables ?? []).length >= CONSUMABLE_SLOTS ? 'disabled' : ''}
+            aria-label="Acheter ${consumable.name} pour ${consumable.price} crédits">${consumable.mark} ${consumable.name} · ${consumable.price} cr.</button>` : ''}</div>` : ''}
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
           const full = jokerSlotsUsed(state) >= 3;
@@ -212,8 +239,12 @@ function render(focus, scored = false) {
       </div>
     </section>
     ${content}
-    <section class="loadout"><h3>Jokers <span>${jokerSlotsUsed(state)}/3</span></h3>
-      ${loadout ? '<ul>' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</section>`;
+    <section class="loadout" aria-label="Inventaire">
+      <div class="joker-collection"><h3>Jokers <span>${jokerSlotsUsed(state)}/3</span></h3>
+        ${loadout ? '<ul>' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</div>
+      <div class="consumables"><h3>Consommables <span>${inventory.length}/${CONSUMABLE_SLOTS}</span></h3>
+        <div class="consumable-slots">${consumableSlots}</div></div>
+    </section>`;
   if (focus) game.querySelector(focus)?.focus();
 }
 
@@ -368,6 +399,10 @@ game.addEventListener('click', event => {
 
   let next = state;
   if (target.dataset.sell !== undefined) next = sellJoker(state, Number(target.dataset.sell));
+  else if (target.dataset.useConsumable !== undefined) next = useConsumable(state, Number(target.dataset.useConsumable));
+  else if (target.dataset.buyConsumable !== undefined) next = buyConsumable(state, target.dataset.buyConsumable);
+  else if (target.dataset.augureTarget !== undefined) next = applyAugure(state, target.dataset.augureTarget);
+  else if (action === 'back-augure-target') next = cancelAugureTarget(state);
   else if (target.dataset.buy !== undefined) next = buy(state, Number(target.dataset.buy));
   else if (target.dataset.pack !== undefined) next = openPack(state, Number(target.dataset.pack));
   else if (target.dataset.augure !== undefined) next = chooseAugure(state, target.dataset.augure);
@@ -398,7 +433,10 @@ game.addEventListener('click', event => {
   if (action === 'play') announcement.textContent = state.last.name + ', +' + state.last.total + ' points.';
   else if (action === 'discard') announcement.textContent = 'Cartes remplacées.';
   else if (target.dataset.buy !== undefined) announcement.textContent = 'Joker équipé.';
-  else if (target.dataset.sell !== undefined) announcement.textContent = 'Joker vendu.';
+  else if (target.dataset.sell !== undefined) announcement.textContent = 'Joker vendu : ' + saleNotice + '.';
+  else if (target.dataset.useConsumable !== undefined) announcement.textContent = 'Consommable utilisé.';
+  else if (target.dataset.buyConsumable !== undefined) announcement.textContent = 'Consommable rangé dans l’inventaire.';
+  else if (target.dataset.augureTarget !== undefined) announcement.textContent = 'Carte améliorée.';
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});

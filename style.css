@@ -828,3 +828,131 @@ dialog.rules {
     overflow: hidden;
   }
 }
+
+/* v17 — immersive fixed tabletop rather than several framed panels. */
+body:has(.table:not([hidden])) { background: #061920; }
+.table {
+  isolation: isolate;
+  position: fixed;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 52% 55%, #173e43a0 5%, #0a1e2db0 85%),
+    linear-gradient(#07131fa0, #071823cc),
+    url('./art/observatoire.jpg') center / cover no-repeat;
+}
+.table::before {
+  content: "";
+  position: absolute;
+  inset: 2% 3% 1%;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 35% 35% 16% 16% / 18% 18% 12% 12%;
+  background:
+    radial-gradient(ellipse at 54% 48%, #397963ad, #205248cf 55%, #0d3038e3 100%),
+    repeating-linear-gradient(26deg, #f5ecc907 0 1px, transparent 1px 5px);
+  box-shadow: inset 0 0 60px #061c28ad, 0 15px 75px #050e20bb;
+}
+.table::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 53% 45%, transparent 36%, #04111b7c 100%);
+}
+#game { position: relative; z-index: 1; background: transparent; }
+.blind, .play, .shop, .finish, .loadout {
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.blind {
+  background: linear-gradient(90deg, #071f29b0 0%, #071f2952 84%, transparent) !important;
+  border-right: 1px solid #dbcca52b !important;
+  text-shadow: 0 1px 4px #06111b;
+}
+.loadout { background: linear-gradient(180deg, #07222a77, transparent) !important; }
+.shop { background: linear-gradient(180deg, #0e273a52, #0b2c2b43) !important; }
+.finish { background: radial-gradient(ellipse at center, #0d2838b5, transparent) !important; }
+.shop .offers li {
+  background: linear-gradient(160deg, #0c2c3acb, #173b42a9) !important;
+  border: 1px solid #b6d8ba30 !important;
+  box-shadow: none !important;
+}
+.shop .offers li:focus-within { border-color: #e8cd8d94 !important; }
+button:not(.card) {
+  background: linear-gradient(160deg, #25525ecf, #143542eb);
+  border-color: #b5c9a477;
+  box-shadow: 0 2px 8px #04182180;
+}
+button.primary {
+  background: linear-gradient(180deg, #fce2a3, #d0a467);
+  border-color: #ffe4ad;
+  color: #182936;
+}
+.hand-info, .score, .loadout h3, .consumables h3 { text-shadow: 0 2px 7px #041520; }
+.card { box-shadow: inset 0 0 0 2px #fff1d5, 0 5px 9px #06121dbb !important; }
+.loadout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(145px, 23vw, 220px);
+  gap: 8px;
+  align-items: start;
+}
+.joker-collection { min-width: 0; max-height: 100%; overflow: auto; overscroll-behavior: contain; }
+.joker-collection > p { margin: 5px 0 0; font-size: .78rem; }
+.joker-collection > ul { min-width: 0; max-height: 66px; overflow: auto; margin-bottom: 0; }
+.consumables { min-width: 0; }
+.consumables h3 {
+  display: flex;
+  justify-content: space-between;
+  font-size: clamp(.69rem, 1.65vw, .88rem);
+  gap: 3px;
+}
+.consumable-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+.consumable-item, .consumable-empty {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid #e7c88c77;
+  border-radius: 6px;
+  background: #102d36a8;
+  color: #ffe1a2;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 3px 2px;
+}
+.consumable-item strong { font-size: .73rem; line-height: 1.1; }
+.consumable-item small { font-size: .62rem; margin: 1px 0 0; }
+.consumable-empty {
+  border-style: dashed;
+  color: #d6d7c4a8;
+  font: 700 1.3rem/1 Georgia,serif;
+  background: #0d29316b;
+}
+.prune-cards.target-cards { max-height: none; min-height: 0; flex: 1 1 auto; }
+.target-cards button {
+  background: linear-gradient(150deg, #fff2d4, #dfd0b1) !important;
+  color: #173443;
+  border: 1px solid #b8a17e;
+  border-radius: 5px;
+  min-height: 40px;
+  box-shadow: 0 2px 5px #07131c66;
+}
+.wallet-gain {
+  display: block;
+  color: #ffe09c;
+  font-size: .84rem;
+  font-weight: 900;
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  .loadout { gap: 5px; max-height: min(30dvh, 92px); }
+  .consumable-slots { margin-top: 2px; }
+  .consumable-item, .consumable-empty { min-height: 37px; padding: 1px; }
+  .consumable-item strong { font-size: .64rem; }
+  .consumable-item small { font-size: .56rem; }
+  .joker-collection > ul { max-height: 56px; }
+}
+@media (orientation: portrait) {
+  .loadout { grid-template-columns: minmax(0, 1fr); }
+}
