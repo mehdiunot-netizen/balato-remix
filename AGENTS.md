@@ -26,6 +26,10 @@ Projet : `mehdiunot-netizen/balato-remix` — jeu de cartes iPhone 11, en paysag
 - Aucun essai récent **sur un iPhone physique** ne valide encore l'ensemble du rendu, du swipe des consommables, du hors-ligne et de la bande en haut de l'écran. Ne jamais annoncer ce contrôle comme effectué.
 - Le catalogue contient des **jokers prototypes verrouillés** : une entrée dans `jokers.mjs` ne signifie pas que tous ses effets complexes soient jouables. Ne pas les activer sans tests.
 
+## Passation explicite à Codex — 26 novembre 2026
+
+**Avant tout nouveau travail, lire [docs/CODEX_HANDOFF.md](docs/CODEX_HANDOFF.md) et [docs/CODEX_ROUTINE.md](docs/CODEX_ROUTINE.md).** Le premier donne l'état vérifié, les captures comparées, les priorités et les écarts à corriger ; le second est la feuille de contrôles à cocher. L'utilisateur a demandé une passation propre sans nouvelle intervention de code à ce stade. La priorité de la prochaine reprise, après son feu vert, reste l'esthétique des cartes Joker, pas les mécaniques.
+
 ## Procédure de reprise
 1. Vérifier que la branche active est `codex/contre-pli-ios`, comparer sa tête GitHub avant toute écriture et ne pas changer `main` par défaut.
 2. Lire [docs/REPRISE.md](docs/REPRISE.md), [docs/BRANCHES.md](docs/BRANCHES.md) et [docs/JOKER_ART.md](docs/JOKER_ART.md). Les historiques anciens peuvent contenir des descriptions dépassées : donner priorité au code actuel et à cette note.
