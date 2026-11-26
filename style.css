@@ -2116,3 +2116,23 @@ button.primary {
   }
   #game:has(> .play) .consumable-item small { color:#44495b; }
 }
+
+
+/* v32 — prevent Joker cards from covering preceding cards on compact iPhone layouts.
+   Three normal cards remain fully accessible without panning; larger negative
+   collections preserve horizontal scrolling instead of clipping their contents. */
+.loadout .joker-collection .joker-fan {
+  gap: clamp(3px, .7vw, 8px);
+  padding-inline: 3px;
+}
+.loadout .joker-collection .joker-fan > .joker-stack-card {
+  --overlap: 0px;
+  margin-left: 0 !important;
+  flex: 0 0 clamp(46px, 7vw, 69px);
+  width: clamp(46px, 7vw, 69px);
+}
+@media (orientation: landscape) {
+  #game:has(> .play) .joker-collection .joker-fan:not(:has(> .joker-stack-card:nth-child(4))) > .joker-stack-card {
+    flex-shrink: 1;
+  }
+}
