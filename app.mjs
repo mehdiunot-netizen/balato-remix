@@ -195,7 +195,7 @@ function render(focus, scored = false) {
     const preview = selected.size ? previewHand(state, cards.filter(c => selected.has(c.id))) : null;
     content = `
       <section class="play" aria-label="Main en cours">
-        <div class="hand-info"><h3>Votre main</h3><span class="pile"><i aria-hidden="true"></i>${state.pile.length} en pioche</span></div>
+        <div class="hand-info"><h3>Votre main</h3></div>
         <div class="cards">${cards.map((card, i) => {
           const rank = faces[card.rank] || card.rank;
           return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''} ${card.augure || ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
@@ -210,9 +210,14 @@ function render(focus, scored = false) {
         <div class="preview" aria-live="polite">${preview ?
           `<strong>${preview.name}</strong><span class="equation"><span class="chips">${preview.chips} jetons</span> × <span class="mult">${scoreFormat.format(preview.mult)}</span> ${Number.isInteger(preview.mult) ? '=' : '≈'} <b>${preview.total}</b></span>` :
           '<span>Sélectionnez de 1 à 5 cartes.</span>'}</div>
-        <div class="actions">
-          <button class="primary" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
-          <button data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser <small>${state.discards} restantes</small></button>
+        <div class="actions" aria-label="Commandes de la main">
+          <button class="primary hand-action" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
+          <button type="button" class="deck-counter" data-action="deck-view"
+            aria-label="Voir les ${deckFor(state).length} cartes de ton paquet, dont ${state.pile.length} dans la pioche">
+            <strong>♠ Paquet · ${deckFor(state).length}</strong>
+            <small>${state.pile.length} en pioche · Voir les cartes</small>
+          </button>
+          <button class="hand-action" data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser <small>${state.discards} restantes</small></button>
         </div>
       </section>`;
   } else if (state.phase === 'casino') {
@@ -613,6 +618,47 @@ game.addEventListener('click', event => {
     scoreDialog.querySelector('#score-detail-total').textContent = chips + ' × ' + scoreFormat.format(mult) +
       (Number.isInteger(mult) ? ' = ' : ' ≈ ') + total + ' points';
     scoreDialog.showModal();
+    return;
+  }
+
+  if (action === 'deck-view') {
+    const fullDeck = deckFor(state);
+    const inHand = new Set((state.hand ?? []).map(card => card.id));
+    const inDraw = new Set((state.pile ?? []).map(card => card.id));
+    const augmented = state.enhancements ?? {};
+    const deckDialog = document.querySelector('#deck-dialog');
+    const deckList = deckDialog.querySelector('#deck-card-list');
+    const cardsBySuit = [...fullDeck].sort((a, b) =>
+      ['♠', '♥', '♣', '♦'].indexOf(a.suit) - ['♠', '♥', '♣', '♦'].indexOf(b.suit)
+      || b.rank - a.rank);
+    deckDialog.querySelector('#deck-summary').textContent =
+      fullDeck.length + ' cartes · ' + inHand.size + ' en main · '
+      + inDraw.size + ' dans la pioche · '
+      + Math.max(0, fullDeck.length - inHand.size - inDraw.size) + ' déjà jouées ou défaussées';
+    deckList.replaceChildren(...cardsBySuit.map(card => {
+      const button = document.createElement('li');
+      button.className = 'deck-mini-card' + ('♥♦'.includes(card.suit) ? ' red' : '');
+      const augure = card.augure ?? augmented[card.id];
+      const status = inHand.has(card.id) ? 'En main' :
+        inDraw.has(card.id) ? 'En pioche' : 'Jouée / défaussée';
+      const face = faces[card.rank] || String(card.rank);
+      const rank = document.createElement('strong');
+      rank.textContent = face + card.suit;
+      button.append(rank);
+      if (augure && augures[augure]) {
+        const effect = document.createElement('span');
+        effect.className = 'deck-mini-augure';
+        effect.textContent = augures[augure].mark + ' ' + augures[augure].name;
+        button.append(effect);
+      }
+      const note = document.createElement('small');
+      note.textContent = status;
+      button.append(note);
+      button.title = (court[card.rank] || (card.rank === 14 ? 'As' : face))
+        + ' de ' + names[card.suit] + ' · ' + status;
+      return button;
+    }));
+    deckDialog.showModal();
     return;
   }
 
