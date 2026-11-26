@@ -1,4 +1,5 @@
 import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=28';
+import { jokerArtwork } from './joker-art.mjs?v=1';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -88,51 +89,10 @@ function emblem(index, mark) {
 }
 
 
-// Original joker portraits: artwork tiles are unique to Contre-Pli, not Balatro sprites.
-// Cell positions are stable; numeric joker IDs must never be reordered in saved runs.
-const illustratedJokers = new Map([
-  [0, 0], [1, 1], [2, 2], [3, 3], [4, 4],
-  [5, 5], [14, 6], [15, 7], [6, 8], [7, 9],
-  [8, 10], [9, 11], [10, 12], [11, 13], [12, 14],
-]);
-
-// A second original 5×3 sheet. Keep previous numeric IDs unchanged for saved games.
-const illustratedJokersSecond = new Map([
-  [13, 0], [16, 1], [17, 2], [18, 3], [19, 4],
-  [20, 5], [21, 6], [22, 7], [23, 8], [24, 9],
-  [25, 10], [26, 11], [27, 12], [28, 13], [29, 14],
-]);
-
-// Older jokers without a finished portrait keep the accessible symbolic fallback: each ID keeps a stable palette and motif.
-// CSS-based art stays crisp and light on iPhone.
+// Original 50×75 pixel-art card illustrations (no Balatro assets).
+// IDs remain stable so existing runs and seeds preserve their Joker identities.
 function jokerPortrait(id, mark) {
-  // A dedicated original portrait replaces the miniature sprite for this joker.
-  if (id === 13) return '<span class="joker-illustration joker-portrait-pixel joker-chambre-echo" aria-hidden="true"></span>';
-  const secondSheetTile = illustratedJokersSecond.get(id);
-  const tile = illustratedJokers.get(id) ?? secondSheetTile;
-  if (tile !== undefined) {
-    const column = tile % 5;
-    const row = Math.floor(tile / 5);
-    const sheet = secondSheetTile === undefined ? '' :
-      '--portrait-sheet:url("./art/joker-originals-v2.webp");';
-    return `<span class="joker-illustration joker-portrait-pixel" aria-hidden="true"
-      style="--sprite-x:${column * 25}%;--sprite-y:${row * 50}%;${sheet}"></span>`;
-  }
-  const palettes = [
-    ['#fae3a0', '#98694f', '#24374b'], ['#f4ca93', '#a54a65', '#332b53'],
-    ['#aee3db', '#277c87', '#1e304e'], ['#fee0aa', '#9162a0', '#28394f'],
-    ['#f2aca0', '#a04445', '#422c49'], ['#c2d9aa', '#55815a', '#273e49'],
-    ['#eecb88', '#a16f2b', '#34435d'], ['#b8c3f0', '#5e66ac', '#24365a'],
-    ['#f7c6d6', '#a34c83', '#344052'], ['#bfe8e8', '#387b76', '#28364c'],
-    ['#f4d0a3', '#9c584e', '#394153'], ['#d2c0ee', '#7461a4', '#2b324a'],
-  ];
-  const [light, mid, dark] = palettes[id % palettes.length];
-  return `<span class="joker-illustration motif-${id % 6}" aria-hidden="true"
-    style="--j-light:${light};--j-mid:${mid};--j-dark:${dark}">
-    <span class="joker-art-orbit"></span>
-    <span class="joker-art-symbol">${mark}</span>
-    <span class="joker-art-spark">✦</span>
-  </span>`;
+  return jokerArtwork(jokers[id] ?? { mark }, id);
 }
 
 // Tiny illustrated faces for the three original Contre-Pli consumables.
@@ -209,7 +169,7 @@ function render(focus, scored = false) {
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
     return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''} reorderable-joker${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
-      <button type="button" class="joker-card-face${(illustratedJokers.has(id) || illustratedJokersSecond.has(id)) ? ' illustrated-joker' : ''}" data-joker-info="${index}"
+      <button type="button" class="joker-card-face illustrated-joker" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
         ${jokerPortrait(id, mark)}
