@@ -1718,3 +1718,15 @@ button.primary {
   .shop .joker-pack-options > li { min-height: 88px; }
   .shop .joker-pack-options > li > small { font-size: .61rem; }
 }
+
+
+/* v29 — DNA can add several permanent cards to a hand. Compress the fan
+   only when necessary; never turn the main game board into a swipe area. */
+@media (orientation: landscape) {
+  #game:has(> .play) .cards > .card {
+    flex-basis: min(clamp(45px, 5.9vw, 78px), var(--adaptive-card-width));
+    width: min(clamp(45px, 5.9vw, 78px), var(--adaptive-card-width));
+    margin-left: -10px;
+  }
+  #game:has(> .play) .cards > .card:first-child { margin-left: 0; }
+}
