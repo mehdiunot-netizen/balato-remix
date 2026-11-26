@@ -457,6 +457,22 @@ function reachableScore(hand, pile, plays, owned, characterState = {}) {
   return score;
 }
 
+// DNA also triggers when Blueprint, Plan or Brainstorm copies its ability.
+// Resolve each joker slot separately so multiple valid copies can stack.
+function dnaActivations(state) {
+  const owned = state.owned ?? [];
+  function resolvesToDna(slot, visited = new Set()) {
+    if (slot < 0 || slot >= owned.length || visited.has(slot)) return false;
+    const joker = jokers[owned[slot]];
+    if (!joker) return false;
+    const nextVisited = new Set([...visited, slot]);
+    if (joker.copyNext) return resolvesToDna(slot + 1, nextVisited);
+    if (joker.copyLeftmost) return resolvesToDna(0, nextVisited);
+    return joker.key === 'adn';
+  }
+  return owned.reduce((sum, _, slot) => sum + Number(resolvesToDna(slot)), 0);
+}
+
 export function useCards(state, ids, action) {
   const counter = { play: 'plays', discard: 'discards' }[action];
   if (state.phase !== 'play' || !counter || !state[counter] ||
@@ -464,18 +480,17 @@ export function useCards(state, ids, action) {
   const cards = state.hand.filter(c => ids.includes(c.id));
   if (cards.length !== ids.length) return state;
   const next = { ...state, [counter]: state[counter] - 1 };
-  let dnaCopy = null;
+  const dnaCopies = [];
   if (action === 'play') {
-    // ADN creates one permanent card AND draws that same copy into the
-    // current hand; it replaces the ordinary refill, not an extra deck draw.
-    if (!state.firstHandPlayed && cards.length === 1 &&
-        state.owned.some(id => jokers[id]?.key === 'adn')) {
+    // Copies enter the hand immediately and become permanent deck cards.
+    // Multiple triggering jokers can push the hand beyond its usual size.
+    if (!state.firstHandPlayed && cards.length === 1) {
       const existing = state.bonusCards ?? [];
       const source = cards[0];
-      const id = 'adn-' + state.round + '-' + existing.length;
-      const copy = { ...source, id };
-      next.bonusCards = [...existing, copy];
-      dnaCopy = copy;
+      for (let i = 0; i < dnaActivations(state); i++) {
+        dnaCopies.push({ ...source, id: 'adn-' + state.round + '-' + (existing.length + i) });
+      }
+      if (dnaCopies.length) next.bonusCards = [...existing, ...dnaCopies];
     }
     next.firstHandPlayed = true;
     next.last = previewHand(state, cards, true);
@@ -504,15 +519,19 @@ export function useCards(state, ids, action) {
           .filter(i => !state.owned.includes(i) && !jokers[i].legendary && !jokers[i].prototype);
         next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
       }
-      if (dnaCopy) next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(dnaCopy);
+      if (dnaCopies.length) next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(dnaCopies);
       return next;
     }
     if (!next.plays) return { ...next, phase: 'lose' };
   }
-  const drawCount = Math.max(0, cards.length - (dnaCopy ? 1 : 0));
+  const remainingHand = state.hand.filter(c => !ids.includes(c.id));
+  const handLimit = blindFor(state).size ?? 8;
+  // Ordinary draws refill only to the hand limit; DNA copies are independent
+  // and are never discarded or denied when the hand is already full.
+  const drawCount = Math.min(state.pile.length,
+    Math.max(0, handLimit - remainingHand.length - dnaCopies.length));
   next.pile = state.pile.slice(drawCount);
-  next.hand = state.hand.filter(c => !ids.includes(c.id))
-    .concat(dnaCopy ? [dnaCopy] : [], state.pile.slice(0, drawCount));
+  next.hand = remainingHand.concat(dnaCopies, state.pile.slice(0, drawCount));
   return next.hand.length ? next : { ...next, phase: 'lose' };
 }
 
