@@ -1386,3 +1386,110 @@ button.primary {
   font-size: .72em;
   line-height: 1;
 }
+
+/* v24 — original miniature illustrations for every joker, including the shop. */
+.joker-illustration {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  margin: 1px 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--j-light), #181c32 45%);
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 28% 18%, #fffbe399, transparent 32%),
+    repeating-linear-gradient(28deg, #ffecba13 0 1px, transparent 1px 5px),
+    radial-gradient(ellipse at 50% 37%, var(--j-mid), var(--j-dark) 89%);
+  box-shadow: inset 0 0 0 2px #fff2c029, inset 0 -7px 12px #070c2377, 0 1px 3px #07101a;
+  color: var(--j-light);
+}
+.joker-illustration::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 68%;
+  aspect-ratio: 1;
+  border: 2px solid var(--j-light);
+  border-radius: 48% 30% 48% 34%;
+  opacity: .60;
+  transform: rotate(24deg);
+  box-shadow: 0 0 9px var(--j-light), inset 0 0 12px #ffffff20;
+}
+.joker-illustration::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 2px;
+  border: 1px solid #fff0c338;
+  border-radius: 2px;
+  pointer-events: none;
+}
+.joker-art-orbit {
+  position: absolute;
+  z-index: 1;
+  width: 88%;
+  height: 45%;
+  border: 1px dashed var(--j-light);
+  border-radius: 50%;
+  opacity: .72;
+  transform: rotate(-32deg);
+}
+.joker-art-symbol {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 76%;
+  aspect-ratio: 1;
+  color: #fff5d9;
+  font: 900 clamp(1.15rem, 3.4dvh, 1.9rem)/1 Georgia, serif;
+  text-align: center;
+  text-shadow: 0 2px 0 #261d39, 0 0 8px var(--j-light);
+  transform: rotate(-6deg);
+}
+.joker-art-spark {
+  position: absolute;
+  z-index: 2;
+  right: 6%;
+  top: 5%;
+  font-size: .65rem;
+  color: var(--j-light);
+  text-shadow: 0 0 6px var(--j-light);
+}
+.joker-illustration.motif-1::before { border-radius: 9%; transform: rotate(42deg); }
+.joker-illustration.motif-1 .joker-art-orbit { transform: rotate(40deg); }
+.joker-illustration.motif-2::before { border-radius: 50%; border-style: dashed; transform: rotate(12deg); }
+.joker-illustration.motif-2 .joker-art-orbit { width: 60%; height: 90%; transform: rotate(5deg); }
+.joker-illustration.motif-3::before { border-radius: 40% 10%; transform: rotate(-30deg); }
+.joker-illustration.motif-3 .joker-art-symbol { transform: rotate(9deg); }
+.joker-illustration.motif-4::before { border-radius: 15% 50%; transform: rotate(10deg); }
+.joker-illustration.motif-4 .joker-art-orbit { height: 80%; width: 54%; transform: rotate(25deg); }
+.joker-illustration.motif-5::before { border-radius: 50% 10% 50% 10%; transform: rotate(46deg); }
+.joker-illustration.motif-5 .joker-art-symbol { transform: rotate(-12deg); }
+.joker-card-face .joker-illustration { min-height: 20px; }
+.joker-stack-card.polychrome-joker .joker-illustration {
+  box-shadow: inset 0 0 0 2px #ffffff55, inset 0 -7px 12px #07101a, 0 0 8px #fff9c9;
+  background:
+    radial-gradient(circle at 28% 18%, #fff6d1a0, transparent 45%),
+    conic-gradient(from 35deg, #3c95a2, #a65bb0, #a06f38, #4eab7c, #3c95a2);
+}
+.joker-stack-card.negative-joker .joker-illustration {
+  filter: saturate(.8) hue-rotate(36deg);
+  box-shadow: inset 0 0 0 1px #bba0ff, 0 0 7px #bc9cfc;
+}
+.shop .joker-illustration {
+  width: clamp(39px, 6vw, 53px);
+  height: clamp(45px, 13dvh, 65px);
+  min-height: 45px;
+  flex: 0 0 auto;
+}
+.shop .joker-art-symbol { font-size: clamp(1.15rem, 3dvh, 1.7rem); }
+@media (orientation: landscape) and (max-height: 360px) {
+  .joker-art-symbol { font-size: 1.35rem; }
+  .shop .joker-illustration { width: 37px; height: 43px; min-height: 43px; }
+}
