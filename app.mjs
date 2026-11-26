@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=26';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=27';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -16,6 +16,8 @@ const rules = document.querySelector('#rules');
 const scoreDialog = document.querySelector('#score-dialog');
 const jokerDialog = document.querySelector('#joker-dialog');
 const jokerDialogSell = document.querySelector('#joker-dialog-sell');
+const consumableDialog = document.querySelector('#consumable-dialog');
+const consumableDialogUse = document.querySelector('#consumable-dialog-use');
 const seedDialog = document.querySelector('#seed-dialog');
 const seedInput = document.querySelector('#seed input');
 const characterSelect = document.querySelector('#character-select');
@@ -121,6 +123,18 @@ function jokerPortrait(id, mark) {
   </span>`;
 }
 
+// Tiny illustrated faces for the three original Contre-Pli consumables.
+// Pure presentation: the existing tarot/booster mechanics remain unchanged.
+const consumableArtwork = {
+  bourse: '<svg viewBox="0 0 80 88" aria-hidden="true"><defs><linearGradient id="coins-bag" x2="1" y2="1"><stop stop-color="#fbe48f"/><stop offset="1" stop-color="#ab6424"/></linearGradient></defs><path d="M29 12L52 12 46 26 55 39Q67 57 55 75L24 75Q11 58 25 39L34 26Z" fill="url(#coins-bag)" stroke="#573520" stroke-width="3"/><path d="M30 28Q40 33 50 28" fill="none" stroke="#5a2b33" stroke-width="5"/><circle cx="40" cy="51" r="13" fill="#ffeaa5" stroke="#885523" stroke-width="3"/><path d="M35 51H45M40 43V60" stroke="#966225" stroke-width="3"/><circle cx="16" cy="68" r="6" fill="#ffdf75" stroke="#905c25" stroke-width="2"/><circle cx="64" cy="66" r="6" fill="#ffdf75" stroke="#905c25" stroke-width="2"/></svg>',
+  relance: '<svg viewBox="0 0 80 88" aria-hidden="true"><rect x="17" y="29" width="33" height="45" rx="4" fill="#e6dbbf" stroke="#334259" stroke-width="3" transform="rotate(-13 35 51)"/><rect x="30" y="20" width="34" height="46" rx="4" fill="#fff4d6" stroke="#34435d" stroke-width="3" transform="rotate(9 45 44)"/><path d="M41 8C63 5 77 21 71 38" stroke="#9ce7f0" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M64 33L70 44 78 34" fill="#c3f3fd"/><path d="M29 78C10 72 5 54 13 41" stroke="#6ce1fa" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M7 47L12 37 20 47" fill="#9ee9fb"/><path d="M39 39L53 44 43 55Z" fill="#418db3"/></svg>',
+  souffle: '<svg viewBox="0 0 80 88" aria-hidden="true"><path d="M7 34Q23 17 41 28T67 17" fill="none" stroke="#defeff" stroke-width="7" stroke-linecap="round"/><path d="M12 47Q36 43 48 53T70 46" fill="none" stroke="#76dbf6" stroke-width="6" stroke-linecap="round"/><path d="M16 59Q29 71 46 65" fill="none" stroke="#c8a8ff" stroke-width="5" stroke-linecap="round"/><path d="M52 14L55 7 58 14 66 17 58 20 55 28 52 20 44 17Z" fill="#fbeaa0"/><path d="M32 46L34 41 36 46 42 48 36 50 34 56 32 50 26 48Z" fill="#faf1ae"/><circle cx="66" cy="64" r="3" fill="#fff3ba"/><circle cx="13" cy="19" r="2" fill="#fff3ba"/></svg>',
+};
+function consumablePortrait(id) {
+  return '<span class="consumable-card-picture consumable-picture-' + id +
+    '" aria-hidden="true">' + (consumableArtwork[id] ?? '') + '</span>';
+}
+
 function restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -200,11 +214,14 @@ function render(focus, scored = false) {
   const consumableSlots = Array.from({ length: capacity }, (_, index) => {
     const item = consumables.find(value => value.id === inventory[index]);
     if (!item) return '<span class="consumable-empty" aria-label="Emplacement de consommable vide">+</span>';
-    const usable = item.id === 'bourse' || state.phase === 'play';
-    const allowed = usable && (state.phase === 'play' || state.phase === 'shop');
-    return `<button type="button" class="consumable-item" data-use-consumable="${index}"
-      title="${item.text}" aria-label="Utiliser ${item.name} : ${item.text}" ${allowed ? '' : 'disabled'}>
-      <strong>${item.mark} ${item.name}</strong><small>${allowed ? 'Utiliser' : 'Prochaine blinde'}</small></button>`;
+    const allowed = (item.id === 'bourse' && (state.phase === 'play' || state.phase === 'shop')) ||
+      (item.id !== 'bourse' && state.phase === 'play');
+    return `<button type="button" class="consumable-item consumable-card${allowed ? '' : ' consumable-card-inactive'}"
+      data-consumable-slot="${index}" aria-haspopup="dialog"
+      title="${item.name} · ${item.text}"
+      aria-label="${item.name} : voir les détails ; glisser pour changer l’ordre">
+      ${consumablePortrait(item.id)}
+      <strong class="consumable-card-name">${item.name}</strong></button>`;
   }).join('');
 
   let content;
@@ -435,6 +452,7 @@ function render(focus, scored = false) {
 /* Drag-to-sell on touch and mouse: never sell unless released in the box. */
 let jokerDrag = null;
 let cardDrag = null;
+let consumableDrag = null;
 let suppressDragClick = false;
 
 function dragOverSellZone(zone, x, y) {
@@ -542,11 +560,48 @@ game.addEventListener('pointerdown', event => {
   try { card.setPointerCapture(event.pointerId); } catch { /* Not all browsers support capture. */ }
 });
 
+/* Consumables behave like real cards: drag changes order, tap opens details.
+   Neither gesture consumes an item until the explicit Use button is pressed. */
+function cleanupConsumableDrag(pointerId, x, y, cancelled = false) {
+  if (!consumableDrag || consumableDrag.pointerId !== pointerId) return;
+  const drag = consumableDrag;
+  consumableDrag = null;
+  const target = !cancelled && drag.started
+    ? document.elementFromPoint(x, y)?.closest('.consumable-slots [data-consumable-slot]') : null;
+  const destination = target ? Number(target.dataset.consumableSlot) : null;
+  game.querySelector('.consumable-drop-target')?.classList.remove('consumable-drop-target');
+  if (drag.card.hasPointerCapture?.(pointerId)) drag.card.releasePointerCapture(pointerId);
+  drag.card.classList.remove('consumable-drag-source');
+  drag.ghost?.remove();
+  if (!drag.started) return;
+  suppressDragClick = true;
+  window.setTimeout(() => { suppressDragClick = false; }, 120);
+  if (destination === null || !Number.isInteger(destination)) return;
+  const next = reorderConsumable(state, drag.slot, destination);
+  if (next === state) return;
+  state = next;
+  persist();
+  render('[data-consumable-slot="' + destination + '"]');
+  announcement.textContent = 'Ordre des consommables modifié.';
+}
+
+game.addEventListener('pointerdown', event => {
+  if (!state || jokerDrag || cardDrag || consumableDrag ||
+      (event.pointerType === 'mouse' && event.button !== 0)) return;
+  const card = event.target.closest('.consumable-slots [data-consumable-slot]');
+  if (!card) return;
+  const slot = Number(card.dataset.consumableSlot);
+  if (!Number.isInteger(slot) || !state.consumables?.[slot]) return;
+  consumableDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY,
+    slot, card, started: false, ghost: null };
+  try { card.setPointerCapture(event.pointerId); } catch { /* Not supported. */ }
+});
+
 /* On iOS keep the viewport fixed; only panels with their own scrollbar pan. */
 document.addEventListener('touchmove', event => {
   if (!event.cancelable) return;
   const scrollArea = event.target.closest?.('.shop .offers, .prune-cards, .loadout, .blind, .finish, dialog.rules');
-  if (jokerDrag || cardDrag || !scrollArea) event.preventDefault();
+  if (jokerDrag || cardDrag || consumableDrag || !scrollArea) event.preventDefault();
 }, { passive: false });
 
 document.addEventListener('pointermove', event => {
@@ -612,19 +667,65 @@ document.addEventListener('pointermove', event => {
   if (over && over !== drag.card) over.classList.add('hand-drop-target');
 }, { passive: false });
 
+document.addEventListener('pointermove', event => {
+  const drag = consumableDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  const { clientX: x, clientY: y } = event;
+  if (!drag.started && Math.hypot(x - drag.x, y - drag.y) > 8) {
+    drag.started = true;
+    const rect = drag.card.getBoundingClientRect();
+    const ghost = drag.card.cloneNode(true);
+    ghost.classList.add('consumable-drag-ghost');
+    ghost.removeAttribute('data-consumable-slot');
+    ghost.removeAttribute('aria-haspopup');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    ghost.disabled = true;
+    document.body.append(ghost);
+    drag.card.classList.add('consumable-drag-source');
+    drag.ghost = ghost;
+  }
+  if (!drag.started) return;
+  event.preventDefault();
+  drag.ghost.style.left = x + 'px';
+  drag.ghost.style.top = y + 'px';
+  game.querySelector('.consumable-drop-target')?.classList.remove('consumable-drop-target');
+  const over = document.elementFromPoint(x, y)?.closest('.consumable-slots [data-consumable-slot]');
+  if (over && over !== drag.card) over.classList.add('consumable-drop-target');
+}, { passive: false });
+
 document.addEventListener('pointerup', event => {
   cleanupJokerDrag(event.pointerId, event.clientX, event.clientY);
   cleanupCardDrag(event.pointerId, event.clientX, event.clientY);
+  cleanupConsumableDrag(event.pointerId, event.clientX, event.clientY);
 });
 document.addEventListener('pointercancel', event => {
   cleanupJokerDrag(event.pointerId, event.clientX, event.clientY, true);
   cleanupCardDrag(event.pointerId, event.clientX, event.clientY, true);
+  cleanupConsumableDrag(event.pointerId, event.clientX, event.clientY, true);
 });
 
 game.addEventListener('click', event => {
   const target = event.target.closest('button');
   if (!target) return;
   const { card, action } = target.dataset;
+  if (target.dataset.consumableSlot !== undefined) {
+    const slot = Number(target.dataset.consumableSlot);
+    const item = consumables.find(value => value.id === state.consumables?.[slot]);
+    if (!item) return;
+    const allowed = (item.id === 'bourse' && ['play', 'shop'].includes(state.phase)) ||
+      (item.id !== 'bourse' && state.phase === 'play');
+    consumableDialog.dataset.slot = String(slot);
+    consumableDialog.dataset.consumableId = item.id;
+    consumableDialog.querySelector('#consumable-dialog-title').textContent = item.name;
+    consumableDialog.querySelector('#consumable-dialog-text').textContent = item.text;
+    consumableDialog.querySelector('#consumable-dialog-art').innerHTML = consumablePortrait(item.id);
+    consumableDialogUse.disabled = !allowed;
+    consumableDialogUse.textContent = allowed ? 'Utiliser cette carte' : 'Disponible pendant une blinde';
+    consumableDialog.showModal();
+    return;
+  }
   if (target.dataset.jokerInfo !== undefined) {
     const slot = Number(target.dataset.jokerInfo);
     if (!Number.isInteger(slot) || slot < 0 || slot >= state.owned.length) return;
@@ -757,7 +858,6 @@ game.addEventListener('click', event => {
 
   let next = state;
   if (target.dataset.sell !== undefined) next = sellJoker(state, Number(target.dataset.sell));
-  else if (target.dataset.useConsumable !== undefined) next = useConsumable(state, Number(target.dataset.useConsumable));
   else if (target.dataset.buyConsumable !== undefined) next = buyConsumable(state, target.dataset.buyConsumable);
   else if (target.dataset.augureTarget !== undefined) next = applyAugure(state, target.dataset.augureTarget);
   else if (action === 'back-augure-target') next = cancelAugureTarget(state);
@@ -798,11 +898,28 @@ game.addEventListener('click', event => {
   else if (action === 'discard') announcement.textContent = 'Cartes remplacées.';
   else if (target.dataset.buy !== undefined || target.dataset.jokerPackChoice !== undefined) announcement.textContent = 'Joker équipé.';
   else if (target.dataset.sell !== undefined) announcement.textContent = 'Joker vendu : ' + saleNotice + '.';
-  else if (target.dataset.useConsumable !== undefined) announcement.textContent = 'Consommable utilisé.';
   else if (target.dataset.buyConsumable !== undefined) announcement.textContent = 'Consommable rangé dans l’inventaire.';
   else if (target.dataset.augureTarget !== undefined) announcement.textContent = 'Carte améliorée.';
   else if (action === 'casino-skip') announcement.textContent = 'Colonne passée : trois bonus récupérés.';
   else if (target.dataset.casinoLane !== undefined) announcement.textContent = 'Blinde choisie.';
+});
+
+consumableDialogUse.addEventListener('click', () => {
+  const slot = Number(consumableDialog.dataset.slot);
+  if (!state || !Number.isInteger(slot) ||
+      state.consumables?.[slot] !== consumableDialog.dataset.consumableId) {
+    consumableDialog.close();
+    return;
+  }
+  const item = consumables.find(value => value.id === state.consumables[slot]);
+  const next = useConsumable(state, slot);
+  if (next === state) return;
+  state = next;
+  selected.clear();
+  persist();
+  consumableDialog.close();
+  render('h3[tabindex="-1"]');
+  announcement.textContent = (item?.name ?? 'Consommable') + ' utilisé.';
 });
 
 jokerDialogSell.addEventListener('click', () => {

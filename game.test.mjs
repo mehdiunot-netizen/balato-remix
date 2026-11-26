@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, offeredJokerPack, openEclipse, openPack, openJokerPack, chooseJokerPack, jokerPacks, packs, previewHand, pruneDeck, restoreRun, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, offeredJokerPack, openEclipse, openPack, openJokerPack, chooseJokerPack, jokerPacks, packs, previewHand, pruneDeck, restoreRun, reorderConsumable, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -327,6 +327,30 @@ test('consommables : deux emplacements, achat, activation et sauvegarde', () => 
   assert.equal(useConsumable(round, 2), round);
   const finished = { ...round, phase: 'lose' };
   assert.equal(useConsumable(finished, slot), finished);
+});
+
+
+test('consommables : glisser change l’ordre, sans consommer ni perdre la sauvegarde', () => {
+  const run = { ...start('GLISSER-CARTES'), phase: 'play',
+    consumables: ['bourse', 'souffle', 'relance'] };
+  const moved = reorderConsumable(run, 0, 2);
+  assert.deepEqual(moved.consumables, ['souffle', 'relance', 'bourse']);
+  assert.deepEqual(run.consumables, ['bourse', 'souffle', 'relance']);
+  assert.equal(moved.credits, run.credits);
+  assert.equal(moved.plays, run.plays);
+  assert.equal(moved.discards, run.discards);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(moved))).consumables,
+    moved.consumables);
+  assert.equal(reorderConsumable(run, 1, 1), run);
+  assert.equal(reorderConsumable(run, -1, 1), run);
+  assert.equal(reorderConsumable(run, 0, 3), run);
+  assert.equal(reorderConsumable(run, 0.5, 1), run);
+  const used = useConsumable(moved, 2);
+  assert.deepEqual(used.consumables, ['souffle', 'relance']);
+  assert.equal(used.credits, run.credits + 5);
+  const duplicates = { ...run, consumables: ['bourse', 'souffle', 'bourse'] };
+  assert.deepEqual(reorderConsumable(duplicates, 0, 2).consumables,
+    ['souffle', 'bourse', 'bourse']);
 });
 
 test('Augure : le joueur choisit la carte cible indépendamment de la pochette', () => {

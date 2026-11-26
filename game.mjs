@@ -275,6 +275,19 @@ export function buyConsumable(state, id) {
     consumables: [...(state.consumables ?? []), id], consumableBought: true };
 }
 
+// Cards can be rearranged without using them, including identical copies.
+// Array order is persisted in the existing save format.
+export function reorderConsumable(state, from, to) {
+  const inventory = state.consumables ?? [];
+  if (!Number.isInteger(from) || !Number.isInteger(to) ||
+      from < 0 || to < 0 || from >= inventory.length ||
+      to >= inventory.length || from === to) return state;
+  const reordered = [...inventory];
+  const [card] = reordered.splice(from, 1);
+  reordered.splice(to, 0, card);
+  return { ...state, consumables: reordered };
+}
+
 export function useConsumable(state, slot) {
   if (!['play', 'shop'].includes(state.phase) || !Number.isInteger(slot)) return state;
   const inventory = state.consumables ?? [];
