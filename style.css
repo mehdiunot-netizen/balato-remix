@@ -1292,3 +1292,73 @@ button.primary {
 @media (orientation:landscape) and (max-height:355px) {
  .casino-heading p{display:none}.casino-board{gap:2px}.casino-map{padding:2px;row-gap:2px}.casino-node{padding:1px 3px}.casino-node-footer{-webkit-line-clamp:1}.casino-node-medal{width:16px;height:16px;font-size:.7rem}.casino-commands button{min-height:25px;padding:2px 7px}
 }
+
+
+/* v23: responsive Balatro-sized tabletop, with a true overlapping touch fan.
+   Keep native landscape proportions on iPhone instead of scaling a desktop board. */
+@media (orientation: landscape) {
+  #game {
+    max-width: none;
+    grid-template-columns: clamp(122px, 16vw, 220px) minmax(0, 1fr);
+    column-gap: clamp(5px, 0.85vw, 11px);
+  }
+  .loadout {
+    max-height: min(25dvh, 124px);
+    grid-template-columns: minmax(0, 1fr) clamp(103px, 15vw, 175px);
+  }
+  .cards {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 0;
+    width: 100%;
+    padding: 8px 8px 15px;
+    overflow: visible;
+  }
+  .cards > .card {
+    flex: 0 0 clamp(45px, 5.9vw, 78px);
+    width: clamp(45px, 5.9vw, 78px);
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    max-height: min(25dvh, 110px);
+    margin-left: clamp(-14px, -1.1vw, -7px);
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    cursor: grab;
+    z-index: 1;
+    transform: translateY(var(--arc)) rotate(var(--tilt));
+  }
+  .cards > .card:first-child { margin-left: 0; }
+  .cards > .card[aria-pressed="true"] {
+    z-index: 4;
+    transform: translateY(-13px) rotate(var(--tilt));
+  }
+  .cards > .card:focus-visible { z-index: 5; }
+  .cards > .card.hand-drag-source { opacity: .32; }
+  .cards > .card.hand-drop-target {
+    z-index: 6;
+    outline: 3px solid #f9d27c;
+    outline-offset: 1px;
+  }
+}
+.card.hand-drag-ghost, .joker-card-ghost {
+  position: fixed !important;
+  z-index: 221 !important;
+  box-sizing: border-box;
+  pointer-events: none !important;
+  margin: 0 !important;
+  opacity: .96;
+  cursor: grabbing;
+  transform: translate(-50%, -65%) rotate(3deg) !important;
+  box-shadow: 0 14px 24px #0009, 0 0 15px #f6df9c88 !important;
+}
+.joker-card-ghost { transform: translate(-50%, -65%) rotate(-3deg) !important; }
+.reorderable-joker.drag-source { opacity: .3; }
+@media (orientation: landscape) and (max-height: 360px) {
+  .loadout { max-height: min(25dvh, 88px); }
+  .cards { padding-block: 4px 10px; }
+  .cards > .card { max-height: 22dvh; }
+}
