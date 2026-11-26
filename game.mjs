@@ -56,7 +56,9 @@ export const blinds = Array.from({ length: CLASSIC_ROUNDS }, (_, round) => blind
 export function blindFor(state) {
   if (state.legacy) return legacyBlinds[state.round];
   if (!Number.isSafeInteger(state.round) || state.round < 0) return undefined;
-  const blind = state.round < CLASSIC_ROUNDS ? blinds[state.round] : state.endless ? blindAt(state.round) : undefined;
+  const blind = state.phase !== 'casino' && state.selectedBlind
+    ? state.selectedBlind
+    : state.round < CLASSIC_ROUNDS ? blinds[state.round] : state.endless ? blindAt(state.round) : undefined;
   return blind && state.target !== undefined ? { ...blind, target: state.target } : blind;
 }
 
@@ -93,8 +95,9 @@ export const augures = {
   wild: { name: 'Caméléon', mark: '✺', text: 'Compte comme n’importe quelle enseigne, sans changer son rang.' },
 };
 
-/* Casino: three rows of three rooms. Skips award the three distinct row tags.
-   Tags are not consumables; they activate only when their conditions are met. */
+
+/* Choose one of three overlapping blinds per round. Skip always grants ALL
+   three rewards. Bonus tags are distinct from the consumable inventory. */
 export const casinoRooms = [
   { name: 'Salon des augures', mark: '✧', reward: 'pack', info: 'Une pochette d’Augures offerte' },
   { name: 'Salle des mains', mark: '♠', reward: 'hands', info: '+3 mains à la prochaine blinde' },
@@ -107,54 +110,67 @@ export const casinoRooms = [
   { name: 'Reflet noir', mark: '◫', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
 ];
 
-function casinoRow(state) { return (state.round + 1) % 3; }
-function currentFloor(state) { return Math.floor((state.round + 1) / 3); }
-function validCasinoLane(state, lane) {
-  if (!Number.isInteger(lane) || lane < 0 || lane > 2) return false;
-  if (casinoRow(state) === 0) return true;
-  const last = [...(state.casinoPath ?? [])].reverse()
-    .find(item => item.floor === currentFloor(state) && item.lane !== null);
-  return !last || Math.abs(last.lane - lane) <= 1;
-}
 export function casinoAvailable(state) {
-  return !state.legacy && Boolean(blindFor({ ...state, round: state.round + 1, target: undefined }));
+  return !state.legacy && Number.isSafeInteger(state.round) &&
+    (state.endless || state.round + 1 < CLASSIC_ROUNDS);
+}
+
+export function casinoOffers(state) {
+  if (!casinoAvailable(state) && state.phase !== 'casino') return [];
+  const nextRound = state.round + 1;
+  if (!state.endless && nextRound >= CLASSIC_ROUNDS) return [];
+  const ante = Math.floor(nextRound / 3);
+  const rewardRow = ((nextRound % 3) + 3) % 3;
+  return [0, 1, 2].map(lane => ({
+    lane,
+    blind: blindAt(ante * 3 + lane),
+    reward: casinoRooms[rewardRow * 3 + lane],
+  }));
 }
 export function openCasino(state) {
   if (state.phase !== 'shop' || !casinoAvailable(state)) return state;
-  return { ...state, phase: 'casino' };
+  return { ...state, phase: 'casino', casinoSkipSummary: [] };
 }
 export function startInCasino(seed = createSeed(), character = 'classique') {
-  const s = start(seed, character);
-  return { ...s, phase: 'casino', round: -1, target: undefined };
+  const initial = start(seed, character);
+  return { ...initial, phase: 'casino', round: -1, target: undefined,
+    selectedBlind: undefined, casinoPath: [], casinoTags: [],
+    casinoSkipSummary: [], freeCasinoPacks: 0 };
 }
 export function chooseCasinoRoom(state, lane) {
-  if (state.phase !== 'casino' || !validCasinoLane(state, lane)) return state;
-  const row = casinoRow(state);
-  const path = [...(state.casinoPath ?? []), { floor: currentFloor(state), row, lane }];
-  const ready = { ...state, phase: 'shop', casinoPath: path, casinoLane: lane };
-  return advance(ready);
+  if (state.phase !== 'casino' || !Number.isInteger(lane)) return state;
+  const offer = casinoOffers(state).find(choice => choice.lane === lane);
+  if (!offer) return state;
+  const nextRound = state.round + 1;
+  const path = [...(state.casinoPath ?? []), { round: nextRound, lane }];
+  return deal({ ...state, round: nextRound, target: undefined,
+    selectedBlind: offer.blind, casinoLane: lane, casinoPath: path,
+    casinoSkipSummary: [] });
 }
-function addCasinoTag(state, kind, room, floor) {
+function addCasinoTag(state, room, roomId, nextRound) {
+  const { reward: kind, info: label } = room;
   if (kind === 'coins') return { ...state, credits: state.credits + 4 };
   if (kind === 'pack') return { ...state, freeCasinoPacks: (state.freeCasinoPacks ?? 0) + 1 };
   const tags = state.casinoTags ?? [];
   return { ...state, casinoTags: [...tags, {
-    id: 'tag-' + floor + '-' + room + '-' + (state.casinoPath?.length ?? 0),
-    kind, label: casinoRooms[room].info,
+    id: 'tag-' + nextRound + '-' + roomId, kind, label,
     remaining: kind === 'negative' ? 3 : null,
   }] };
 }
 export function skipCasinoRow(state) {
   if (state.phase !== 'casino') return state;
-  const row = casinoRow(state), floor = currentFloor(state);
+  const offers = casinoOffers(state);
+  if (offers.length !== 3) return state;
+  const nextRound = state.round + 1;
   let next = { ...state };
-  for (let lane = 0; lane < 3; lane++) {
-    const room = row * 3 + lane;
-    next = addCasinoTag(next, casinoRooms[room].reward, room, floor);
-  }
-  next = { ...next, casinoPath: [...(next.casinoPath ?? []), { floor, row, lane: null }], round: state.round + 1 };
-  if (!next.endless && next.round === CLASSIC_ROUNDS - 1) return { ...next, phase: 'win' };
-  return next;
+  // Atomic skip: all three tags from the visible blind cards, with no selection.
+  for (const option of offers)
+    next = addCasinoTag(next, option.reward, option.lane, nextRound);
+  next = { ...next, round: nextRound, phase: 'casino', selectedBlind: undefined,
+    target: undefined, casinoSkipSummary: offers.map(option => option.reward.info),
+    casinoPath: [...(next.casinoPath ?? []), { round: nextRound, lane: null }] };
+  return !next.endless && nextRound >= CLASSIC_ROUNDS - 1
+    ? { ...next, phase: 'win' } : next;
 }
 export function openCasinoBonusPack(state) {
   if (state.phase !== 'casino' || !(state.freeCasinoPacks > 0)) return state;
@@ -166,8 +182,8 @@ export function openCasinoBonusPack(state) {
   const drawn = shuffle(candidates, random);
   const choices = available.slice(0, 3).map((augure, index) =>
     augure === 'prune' ? { id: 'prune', augure } : { ...(drawn[index % drawn.length]), augure });
-  return { ...state, phase: 'pack', choices,
-    freeCasinoPacks: state.freeCasinoPacks - 1, returnToCasino: true };
+  return { ...state, phase: 'pack', choices, freeCasinoPacks: state.freeCasinoPacks - 1,
+    returnToCasino: true };
 }
 function resolveCasinoTagsOnDeal(state) {
   let extraHands = 0;
@@ -178,10 +194,9 @@ function resolveCasinoTagsOnDeal(state) {
     if (tag.kind === 'hands') { extraHands += 3; continue; }
     if (tag.kind !== 'negative') { keep.push(tag); continue; }
     if (tag.remaining > 1) { keep.push({ ...tag, remaining: tag.remaining - 1 }); continue; }
-    const eligible = state.owned.map((id,index)=>index).filter(i=>!negativeSlots.includes(i));
+    const eligible = state.owned.map((_, index) => index).filter(i => !negativeSlots.includes(i));
     if (!eligible.length) { keep.push({ ...tag, remaining: 0 }); continue; }
-    const drawn = shuffle(eligible, random).slice(0, 2);
-    negativeSlots.push(...drawn);
+    negativeSlots.push(...shuffle(eligible, random).slice(0, 2));
   }
   return { ...state, negativeSlots, casinoTags: keep, casinoExtraHands: extraHands };
 }
@@ -581,7 +596,8 @@ export function chooseEclipse(state, effect) {
 
 export function continueRun(state) {
   if (state.phase !== 'win' || state.legacy || state.round !== CLASSIC_ROUNDS - 1) return state;
-  return { ...state, phase: 'shop', endless: true };
+  return { ...state, phase: state.casinoPath?.length ? 'casino' : 'shop',
+    endless: true, casinoSkipSummary: [] };
 }
 
 export function advance(state) {
@@ -592,5 +608,6 @@ export function advance(state) {
     bonusCards: state.bonusCards, polychromeSlots: state.polychromeSlots,
     enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots,
     casinoPath: state.casinoPath, casinoTags: state.casinoTags,
-    freeCasinoPacks: state.freeCasinoPacks });
+    freeCasinoPacks: state.freeCasinoPacks, selectedBlind: undefined,
+    casinoSkipSummary: [] });
 }
