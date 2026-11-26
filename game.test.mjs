@@ -505,7 +505,8 @@ test('déplacer un joker change les copies sans perdre les éditions', () => {
   assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(next))), next);
   assert.equal(reorderJoker(base, 0, 3), base);
   assert.equal(reorderJoker(base, 1, 1), base);
-  assert.equal(reorderJoker({ ...base, phase: 'pack' }, 0, 1).owned[0], plan);
+  assert.equal(reorderJoker({ ...base, phase: 'pack' }, 0, 1).owned[0], 1);
+  assert.equal(reorderJoker({ ...base, phase: 'eclipse' }, 0, 1).owned[0], 1);
   assert.ok(evaluate([deck[0]], base.owned).mult > evaluate([deck[0]], next.owned).mult);
 });
 test('sauvegarde d’une nouvelle partie en casino et d’un Skip triple', () => {
