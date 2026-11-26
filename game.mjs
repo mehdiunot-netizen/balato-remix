@@ -22,6 +22,25 @@ const bosses = [
 
 const CLASSIC_ROUNDS = 24;
 
+export const characters = [
+  { id: 'classique', name: 'Sans personnage', mark: '♠', text: 'Règles classiques, sans bonus.' },
+  { id: 'riche', name: 'Le Riche', mark: '¤', text: '+10 crédits au début de la partie.' },
+  { id: 'chanceux', name: 'Le Chanceux', mark: '✦', text: 'Une carte de ton paquet reçoit un Augure aléatoire, fixé par la seed.' },
+  { id: 'as-copieur', name: 'L’As Copieur', mark: '⌘', text: 'Commence avec ADN : la première main de chaque blinde copie dans le paquet la carte jouée seule.' },
+  { id: 'negatif', name: 'Le Négatif', mark: '◐', text: 'Tous les jokers achetés sont négatifs : ils ne prennent pas de place.' },
+  { id: 'multiplieur', name: 'Le Multiplieur', mark: '✺', text: 'Commence avec un joker polychrome aléatoire qui donne ×1,5 au multiplicateur final.' },
+  { id: 'marchand', name: 'Le Marchand', mark: '◇', text: '−20 % sur les achats en boutique, arrondis au crédit inférieur.' },
+  { id: 'stratege', name: 'Le Stratège', mark: '♜', text: '+2 défausses à chaque blinde.' },
+  { id: 'magicien', name: 'Le Magicien', mark: '✧', text: 'Quatre emplacements de consommables au lieu de deux.' },
+  { id: 'joueur', name: 'Le Joueur', mark: '★', text: 'Commence avec un joker légendaire aléatoire, fixé par la seed.' },
+  { id: 'copieur-supreme', name: 'Le Copieur Suprême', mark: '▣', text: 'Commence avec Plan, qui copie le pouvoir du joker immédiatement à sa droite.' },
+  { id: 'tricheur', name: 'Le Tricheur', mark: '♠', text: 'Chaque main jouée est considérée comme la première de la blinde.' },
+];
+export const characterFor = state => characters.find(c => c.id === state?.character) ?? characters[0];
+export const shopPrice = (state, price) =>
+  state?.character === 'marchand' ? Math.max(1, Math.floor(price * 0.8)) : price;
+
+
 function blindAt(round) {
   const ante = Math.floor(round / 3) + 1;
   const type = round % 3;
@@ -85,6 +104,7 @@ export const consumables = [
   { id: 'souffle', name: 'Souffle', mark: '✷', text: '+1 main pour cette blinde.', price: 5 },
 ];
 export const CONSUMABLE_SLOTS = 2;
+export const consumableSlotsFor = state => CONSUMABLE_SLOTS + (state?.character === 'magicien' ? 2 : 0);
 
 export function consumableOffer(state) {
   if (state.phase !== 'shop' || state.consumableBought) return undefined;
@@ -94,9 +114,10 @@ export function consumableOffer(state) {
 
 export function buyConsumable(state, id) {
   const offer = consumableOffer(state);
-  if (!offer || id !== offer.id || state.credits < offer.price ||
-      (state.consumables ?? []).length >= CONSUMABLE_SLOTS) return state;
-  return { ...state, credits: state.credits - offer.price,
+  if (!offer || id !== offer.id ||
+      (state.consumables ?? []).length >= consumableSlotsFor(state) ||
+      state.credits < shopPrice(state, offer.price)) return state;
+  return { ...state, credits: state.credits - shopPrice(state, offer.price),
     consumables: [...(state.consumables ?? []), id], consumableBought: true };
 }
 
@@ -114,7 +135,7 @@ export function useConsumable(state, slot) {
 }
 
 
-export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, trace = false } = {}) {
+export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, trace = false, polychromeSlots = [] } = {}) {
   if (!cards.length || cards.length > 5) throw new RangeError('Choisir de 1 à 5 cartes.');
   const sorted = [...cards].sort((a, b) => b.rank - a.rank);
   const groups = new Map();
@@ -162,8 +183,14 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, t
     steps?.push({ type: 'augure', name: augures.steel.name, factor: 1.5 });
   }
   const factors = [];
+  // A Plan copies the next joker's ability, including another Plan, but never loops.
+  const bonusAt = (slot, seen = new Set()) => {
+    if (seen.has(slot) || slot >= owned.length || !jokers[owned[slot]]) return [0, 0, 1];
+    const joker = jokers[owned[slot]];
+    return joker.copyNext ? bonusAt(slot + 1, new Set([...seen, slot])) : joker.bonus(scoring, context);
+  };
   for (const [slot, id] of owned.entries()) {
-    const [extraChips, extraMult, extraFactor] = jokers[id].bonus(scoring, context);
+    const [extraChips, extraMult, extraFactor] = bonusAt(slot);
     chips += extraChips;
     mult += extraMult;
     factor *= extraFactor;
@@ -171,6 +198,11 @@ export function evaluate(cards, owned = [], { hand = cards, firstPlay = false, t
       if (extraChips || extraMult) steps.push({ type: 'add', id, slot, chips: extraChips, mult: extraMult });
       if (extraFactor !== 1) factors.push({ type: 'factor', id, slot, factor: extraFactor });
     }
+  }
+  for (const slot of polychromeSlots) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= owned.length) continue;
+    factor *= 1.5;
+    factors.push({ type: 'factor', name: 'Polychrome', slot, factor: 1.5 });
   }
   mult *= factor;
   const resultScore = { name, chips, mult, total: Math.floor(chips * mult) };
@@ -188,11 +220,40 @@ function shuffle(items, random) {
 }
 
 export function previewHand(state, cards, trace = false) {
-  return evaluate(cards, state.owned, { hand: state.hand, firstPlay: state.plays === (blindFor(state).plays ?? 4), trace });
+  const opening = blindFor(state).plays ?? 4;
+  return evaluate(cards, state.owned, {
+    hand: state.hand,
+    firstPlay: state.character === 'tricheur' ||
+      (state.plays >= opening && !state.firstHandPlayed),
+    trace,
+    polychromeSlots: state.polychromeSlots ?? [],
+  });
 }
 
-export function start(seed = createSeed()) {
-  return deal({ seed, round: 0, credits: 3, owned: [], consumables: [], catalogSize: jokers.length });
+export function start(seed = createSeed(), character = 'classique') {
+  const chosen = characters.some(c => c.id === character) ? character : 'classique';
+  const state = { seed, character: chosen, round: 0,
+    credits: chosen === 'riche' ? 13 : 3,
+    owned: [], consumables: [], catalogSize: jokers.length };
+  const random = seededRandom(seed, 'character-start', 0);
+  if (chosen === 'chanceux') {
+    const card = deck[Math.floor(random() * deck.length)];
+    const kinds = Object.keys(augures).filter(id => id !== 'prune');
+    state.enhancements = { [card.id]: kinds[Math.floor(random() * kinds.length)] };
+  }
+  if (chosen === 'as-copieur') state.owned = [jokers.findIndex(j => j.key === 'adn')];
+  if (chosen === 'copieur-supreme') state.owned = [jokers.findIndex(j => j.key === 'plan')];
+  if (chosen === 'multiplieur') {
+    const ordinary = jokers.map((j, i) => ({ j, i }))
+      .filter(({ j }) => !j.legendary && !j.copyNext && j.key !== 'adn');
+    state.owned = [ordinary[Math.floor(random() * ordinary.length)].i];
+    state.polychromeSlots = [0];
+  }
+  if (chosen === 'joueur') {
+    const legendary = jokers.map((j, i) => ({ j, i })).filter(({ j }) => j.legendary);
+    state.owned = [legendary[Math.floor(random() * legendary.length)].i];
+  }
+  return deal(state);
 }
 
 function deal(carry) {
@@ -204,15 +265,17 @@ function deal(carry) {
   const hand = pile.splice(0, blind.size ?? 8);
   const plays = blind.plays ?? 4;
   const target = carry.legacy ? blind.target : Math.min(
-    blind.target, reachableScore(hand, pile, plays, carry.owned),
+    blind.target, reachableScore(hand, pile, plays, carry.owned, carry),
   );
-  return { ...carry, target, phase: 'play', score: 0, plays, discards: blind.discards ?? 3,
+  return { ...carry, target, phase: 'play', score: 0, plays,
+    discards: (blind.discards ?? 3) + (carry.character === 'stratege' ? 2 : 0),
+    firstHandPlayed: false,
     consumableBought: false, hand, pile, offers: [], last: null, reward: 0 };
 }
 
 // Simulate a legal sequence with the actual draw order. Its score is a lower
 // bound on the best attainable score, since the player can also use discards.
-function reachableScore(hand, pile, plays, owned) {
+function reachableScore(hand, pile, plays, owned, characterState = {}) {
   let score = 0;
   let drawn = 0;
   for (let turn = 0; turn < plays && hand.length; turn++) {
@@ -221,7 +284,11 @@ function reachableScore(hand, pile, plays, owned) {
     for (let mask = 1; mask < (1 << hand.length); mask++) {
       const cards = hand.filter((_, i) => mask & (1 << i));
       if (cards.length > 5) continue;
-      const total = evaluate(cards, owned, { hand, firstPlay: turn === 0 }).total;
+      const total = evaluate(cards, owned, {
+        hand,
+        firstPlay: turn === 0 || characterState.character === 'tricheur',
+        polychromeSlots: characterState.polychromeSlots ?? [],
+      }).total;
       if (total > bestScore) {
         bestScore = total;
         bestCards = cards;
@@ -243,6 +310,14 @@ export function useCards(state, ids, action) {
   if (cards.length !== ids.length) return state;
   const next = { ...state, [counter]: state[counter] - 1 };
   if (action === 'play') {
+    if (!state.firstHandPlayed && cards.length === 1 &&
+        state.owned.some(id => jokers[id]?.key === 'adn')) {
+      const existing = state.bonusCards ?? [];
+      const source = cards[0];
+      const id = 'adn-' + state.round + '-' + existing.length;
+      next.bonusCards = [...existing, { ...source, id }];
+    }
+    next.firstHandPlayed = true;
     next.last = previewHand(state, cards, true);
     next.score += next.last.total;
     if (next.score >= blindFor(state).target) {
@@ -253,7 +328,8 @@ export function useCards(state, ids, action) {
       const classicWin = !state.legacy && state.round === CLASSIC_ROUNDS - 1;
       next.phase = lastLegacyBlind || classicWin ? 'win' : 'shop';
       if (!lastLegacyBlind) {
-        const available = jokers.slice(0, state.catalogSize ?? 7).map((_, i) => i).filter(i => !state.owned.includes(i));
+        const available = jokers.slice(0, state.catalogSize ?? 7).map((_, i) => i)
+          .filter(i => !state.owned.includes(i) && !jokers[i].legendary);
         next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
       }
       return next;
@@ -271,22 +347,30 @@ export function sellJoker(state, slot) {
       slot < 0 || slot >= state.owned.length) return state;
   const id = state.owned[slot];
   const value = Math.max(1, Math.floor(jokers[id].price / 2));
+  const remap = indexes => (indexes ?? [])
+    .filter(index => index !== slot)
+    .map(index => index > slot ? index - 1 : index);
   return { ...state, credits: state.credits + value,
     owned: state.owned.filter((_, index) => index !== slot),
-    negativeSlots: (state.negativeSlots ?? [])
-      .filter(index => index !== slot)
-      .map(index => index > slot ? index - 1 : index) };
+    negativeSlots: remap(state.negativeSlots),
+    polychromeSlots: remap(state.polychromeSlots) };
 }
 
 export function buy(state, id) {
   if (state.phase !== 'shop' || !state.offers.includes(id) || state.owned.includes(id) ||
-      jokerSlotsUsed(state) >= 3 || state.credits < jokers[id].price) return state;
-  return { ...state, credits: state.credits - jokers[id].price,
-    owned: [...state.owned, id], offers: state.offers.filter(offer => offer !== id) };
+      !jokers[id] || (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3) ||
+      state.credits < shopPrice(state, jokers[id].price)) return state;
+  return { ...state, credits: state.credits - shopPrice(state, jokers[id].price),
+    owned: [...state.owned, id],
+    negativeSlots: state.character === 'negatif'
+      ? [...(state.negativeSlots ?? []), state.owned.length]
+      : state.negativeSlots,
+    offers: state.offers.filter(offer => offer !== id) };
 }
 
 function remainingDeck(state) {
-  return deck.filter(card => !state.removed?.includes(card.id));
+  return [...deck, ...(state.bonusCards ?? [])]
+    .filter(card => !state.removed?.includes(card.id));
 }
 
 export function removableCount(state) {
@@ -313,7 +397,7 @@ export function offeredPack(state) {
 
 export function openPack(state, id) {
   const pack = packs[id];
-  if (!pack || offeredPack(state) !== id || state.credits < pack.price) return state;
+  if (!pack || offeredPack(state) !== id || state.credits < shopPrice(state, pack.price)) return state;
   const { candidates, kinds } = augureOptions(state);
   const shuffledCards = shuffle(candidates, seededRandom(state.seed, 'augures', state.round));
   const shuffledKinds = shuffle(kinds, seededRandom(state.seed, 'augure-kinds', state.round));
@@ -322,7 +406,7 @@ export function openPack(state, id) {
     if (augure === 'prune') return [{ id: 'prune', augure }];
     return index < shuffledCards.length ? [{ ...shuffledCards[index++], augure }] : [];
   }).slice(0, pack.count);
-  return { ...state, phase: 'pack', packBought: true, credits: state.credits - pack.price, choices };
+  return { ...state, phase: 'pack', packBought: true, credits: state.credits - shopPrice(state, pack.price), choices };
 }
 
 export function chooseAugure(state, id) {
@@ -353,7 +437,7 @@ export function pruneDeck(state, ids) {
   if (state.phase !== 'prune') return state;
   if (ids === null) return { ...state, phase: 'pack' };
   if (!ids.length || ids.length > removableCount(state) || new Set(ids).size !== ids.length ||
-      ids.some(id => !deck.some(card => card.id === id) || state.removed?.includes(id))) return state;
+      ids.some(id => !remainingDeck(state).some(card => card.id === id))) return state;
   return { ...state, phase: 'shop', choices: [], removed: [...(state.removed ?? []), ...ids] };
 }
 
@@ -371,14 +455,14 @@ export function eclipseOffer(state) {
 }
 
 export function openEclipse(state) {
-  if (!eclipseOffer(state) || state.credits < ECLIPSE_PRICE) return state;
+  if (!eclipseOffer(state) || state.credits < shopPrice(state, ECLIPSE_PRICE)) return state;
   const random = seededRandom(state.seed, 'eclipse-targets', state.round);
   const normal = state.owned.map((_, index) => index).filter(index => !state.negativeSlots?.includes(index));
   const eclipse = {
     negative: normal.length ? normal[Math.floor(random() * normal.length)] : null,
     copy: jokerSlotsUsed(state) < 3 ? Math.floor(random() * state.owned.length) : null,
   };
-  return { ...state, phase: 'eclipse', eclipse, eclipseBought: true, credits: state.credits - ECLIPSE_PRICE };
+  return { ...state, phase: 'eclipse', eclipse, eclipseBought: true, credits: state.credits - shopPrice(state, ECLIPSE_PRICE) };
 }
 
 export function chooseEclipse(state, effect) {
@@ -401,6 +485,7 @@ export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
     credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
-    consumables: state.consumables ?? [],
+    consumables: state.consumables ?? [], character: state.character,
+    bonusCards: state.bonusCards, polychromeSlots: state.polychromeSlots,
     enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots });
 }

@@ -37,3 +37,22 @@ export const jokers = [
   { name: 'Chambre d’écho', mark: '◈', price: 6, text: '+5 au multiplicateur pour un full ou une double paire.',
     bonus: (_, { name }) => [0, name === 'Full' || name === 'Double paire' ? 5 : 0, 1] },
 ];
+
+// Additional original starting and legendary jokers; keep prior indices stable.
+jokers.push(
+  { key: 'adn', name: 'ADN', mark: '⌘', price: 8,
+    text: 'Si la première main de la blinde ne joue qu’une seule carte, ajoute une copie permanente de cette carte au paquet.',
+    bonus: () => [0, 0, 1] },
+  { key: 'plan', name: 'Plan', mark: '▤', price: 9, copyNext: true,
+    text: 'Copie le bonus du joker placé immédiatement à sa droite.',
+    bonus: () => [0, 0, 1] },
+  { key: 'astre', legendary: true, name: 'Astre souverain', mark: '★', price: 15,
+    text: 'Joker légendaire · multiplie le multiplicateur final par 2.',
+    bonus: () => [0, 0, 2] },
+  { key: 'orbe', legendary: true, name: 'Orbe royal', mark: '✷', price: 15,
+    text: 'Joker légendaire · +12 au multiplicateur sur chaque main.',
+    bonus: () => [0, 12, 1] },
+  { key: 'comete', legendary: true, name: 'Comète d’or', mark: '☄', price: 15,
+    text: 'Joker légendaire · +70 jetons à chaque main.',
+    bonus: () => [70, 0, 1] },
+);

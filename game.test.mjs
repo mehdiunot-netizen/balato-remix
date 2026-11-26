@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -340,4 +340,102 @@ test('Augure : le joueur choisit la carte cible indépendamment de la pochette',
   assert.equal(result.enhancements[chosen.id], choice.augure);
   assert.equal(result.enhancements[choice.id], undefined);
   assert.equal(result.phase, 'shop');
+});
+
+test('les onze personnages sont proposés avec une option classique compatible', () => {
+  assert.equal(characters.length, 12);
+  assert.equal(new Set(characters.map(c => c.id)).size, 12);
+  assert.equal(characterFor(start('legacy')).id, 'classique');
+  assert.equal(characterFor({}).id, 'classique');
+  assert.equal(start('riche', 'riche').credits, 13);
+  assert.equal(start('ordinaire').credits, 3);
+  assert.deepEqual(start('FIXE', 'chanceux'), start('FIXE', 'chanceux'));
+  const chanceux = start('FIXE', 'chanceux');
+  assert.equal(Object.keys(chanceux.enhancements).length, 1);
+  assert.ok(deck.some(c => c.id === Object.keys(chanceux.enhancements)[0]));
+  assert.equal(start('X', 'stratege').discards, 5);
+  assert.equal(consumableSlotsFor(start('X', 'magicien')), 4);
+  assert.equal(consumableSlotsFor(start('X')), 2);
+  assert.equal(start('X', 'copieur-supreme').owned.length, 1);
+  assert.equal(jokers[start('X', 'copieur-supreme').owned[0]].key, 'plan');
+  assert.ok(jokers[start('X', 'joueur').owned[0]].legendary);
+  assert.deepEqual(start('FIXE', 'joueur'), start('FIXE', 'joueur'));
+  assert.equal(jokers[start('X', 'as-copieur').owned[0]].key, 'adn');
+});
+
+test('Le Négatif achète des jokers sans limite et préserve la place libre', () => {
+  let s = start('NEGATIF', 'negatif');
+  for (const i of [0, 1, 2, 3]) {
+    s = buy({ ...s, phase: 'shop', credits: 100, offers: [i] }, i);
+  }
+  assert.equal(s.owned.length, 4);
+  assert.deepEqual(s.negativeSlots, [0, 1, 2, 3]);
+  assert.equal(jokerSlotsUsed(s), 0);
+  const sold = sellJoker(s, 1);
+  assert.deepEqual(sold.negativeSlots, [0, 1, 2]);
+});
+test('Le Marchand bénéficie du même prix affiché et payé', () => {
+  const s = start('MARCHAND', 'marchand');
+  assert.equal(shopPrice(s, 5), 4);
+  assert.equal(shopPrice(s, 4), 3);
+  let shop = { ...s, phase: 'shop', credits: 20, offers: [0] };
+  const purchased = buy(shop, 0);
+  assert.equal(shop.credits - purchased.credits, shopPrice(shop, jokers[0].price));
+  const c = consumableOffer(shop);
+  assert.equal(shop.credits - buyConsumable(shop, c.id).credits, shopPrice(shop, c.price));
+  const pack = offeredPack(shop);
+  assert.equal(shop.credits - openPack(shop, pack).credits, shopPrice(shop, packs[pack].price));
+});
+test('Le Multiplieur commence avec un polychrome qui multiplie le total', () => {
+  const s = start('POLY', 'multiplieur');
+  assert.equal(s.owned.length, 1);
+  assert.deepEqual(s.polychromeSlots, [0]);
+  const cards = deck.filter(c => ['♠2', '♥2'].includes(c.id));
+  const base = evaluate(cards, s.owned).total;
+  const value = previewHand({ ...s, hand: cards }, cards);
+  assert.equal(value.total, Math.floor(base * 1.5));
+  const sold = sellJoker({ ...s, phase: 'shop', credits: 0 }, 0);
+  assert.deepEqual(sold.polychromeSlots, []);
+});
+test('Plan copie le joker de droite et ADN ajoute une seule carte permanente', () => {
+  const plan = jokers.findIndex(j => j.key === 'plan');
+  const normal = evaluate(deck.slice(0, 1), [1]);
+  const copied = evaluate(deck.slice(0, 1), [plan, 1]);
+  assert.equal(copied.mult, normal.mult + 3);
+  assert.equal(evaluate(deck.slice(0, 1), [plan]).mult, 1);
+  const chain = evaluate(deck.slice(0, 1), [plan, plan, 1]);
+  assert.equal(chain.mult, normal.mult + 6);
+  let s = start('ADN', 'as-copieur');
+  const first = s.hand[0];
+  const after = useCards(s, [first.id], 'play');
+  assert.equal(after.bonusCards.length, 1);
+  assert.equal(after.bonusCards[0].rank, first.rank);
+  assert.notEqual(after.bonusCards[0].id, first.id);
+  const afterNext = advance({ ...after, phase: 'shop' });
+  assert.ok(deckFor(afterNext).some(c => c.id === after.bonusCards[0].id));
+  const notSingle = useCards(s, s.hand.slice(0, 2).map(c => c.id), 'play');
+  assert.equal(notSingle.bonusCards, undefined);
+});
+test('Le Tricheur garde tous les bonus de première main et les sauvegardes existantes', () => {
+  const first = jokers.findIndex(j => j.name === 'Feu de départ');
+  const a = deck[0];
+  const tricheur = { ...start('TRICHE', 'tricheur'), owned: [first], plays: 2 };
+  const normal = { ...start('NORMAL'), owned: [first], plays: 2 };
+  assert.equal(previewHand(tricheur, [a]).total, Math.floor(previewHand(normal, [a]).total * 1.75));
+  const legacy = restoreRun({ ...start('old'), character: undefined });
+  assert.equal(characterFor(legacy).id, 'classique');
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(tricheur))), tricheur);
+});
+test('Le Magicien conserve quatre consommables sans les imposer aux autres', () => {
+  let s = { ...start('MAG', 'magicien'), phase: 'shop', credits: 50 };
+  for (let i = 0; i < 4; i++) {
+    s = { ...s, consumableBought: false, round: i };
+    const offer = consumableOffer(s);
+    s = buyConsumable(s, offer.id);
+    assert.equal(s.consumables.length, i + 1);
+  }
+  s = { ...s, consumableBought: false };
+  assert.equal(buyConsumable(s, consumableOffer(s).id), s);
+  const next = advance(s);
+  assert.equal(next.consumables.length, 4);
 });
