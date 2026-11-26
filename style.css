@@ -655,22 +655,25 @@ button:where(:not(.card)):active:not(:disabled) { filter: brightness(1.12); }
   letter-spacing: .025em;
 }
 .sell-drop-zone {
-  flex: 0 0 auto;
-  min-width: 82px;
-  min-height: 44px;
-  padding: 3px 7px;
+  position: fixed;
+  z-index: 120;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: clamp(135px, 23vw, 185px);
+  height: clamp(75px, 24dvh, 106px);
   display: grid;
   place-content: center;
-  gap: 2px;
+  gap: 5px;
   text-align: center;
-  border: 2px dashed #ffce73;
-  border-radius: 8px;
+  border: 3px dashed #ffce73;
+  border-radius: 12px;
   background: linear-gradient(145deg, #6c3842f0, #281b32f5);
+  box-shadow: 0 0 0 3px #21182999, 0 10px 25px #0b142aaa;
   color: #fff2c9;
   pointer-events: none;
 }
-.sell-drop-zone strong { font: 900 clamp(.8rem, 2vw, 1.1rem)/1 Georgia, serif; }
-.sell-drop-zone small { color: #f8dec0; font-size: .65rem; margin: 0; }
+.sell-drop-zone strong { font: 900 clamp(1rem, 3vw, 1.3rem)/1 Georgia, serif; letter-spacing: .08em; }
+.sell-drop-zone small { color: #f8dec0; font-size: .74rem; }
 .sell-drop-zone.is-over {
   border-style: solid;
   border-color: #fff3bc;
@@ -710,6 +713,7 @@ button:where(:not(.card)):active:not(:disabled) { filter: brightness(1.12); }
 @media (orientation: landscape) and (max-height: 360px) {
   .draggable-joker .card-emblem { width: 26px; height: 26px; }
   .drag-hint { font-size: .58rem; }
+  .sell-drop-zone { height: 75px; width: 140px; }
   .joker-drag-ghost { width: 95px; min-height: 90px; }
 }
 
