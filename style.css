@@ -1730,3 +1730,218 @@ button.primary {
   }
   #game:has(> .play) .cards > .card:first-child { margin-left: 0; }
 }
+
+
+/* v30 — Balatro screenshot HUD proportions. Only visual presentation changes:
+   the score engine and multiplier values are not touched. */
+@media (orientation: landscape) {
+  #game:has(> .play) {
+    grid-template-columns: clamp(147px, 19.3vw, 296px);
+    grid-template-columns: clamp(147px, 19.3vw, 296px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 24dvh) minmax(0, 1fr);
+    gap: 0;
+  }
+  #game:has(> .play) > .blind {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3px, .6dvh, 6px);
+    grid-column: 1;
+    grid-row: 1 / 3;
+    padding: clamp(3px, .5vw, 8px) !important;
+    background: linear-gradient(180deg, #153d52ed, #0b1d2df2) !important;
+    border-right: 3px solid #125881 !important;
+    overflow: hidden;
+  }
+  #game:has(> .play) > .blind .eyebrow {
+    font-size: clamp(.49rem, 1.15vw, .72rem);
+    text-align: center;
+    color: #d9e5f6;
+    line-height: 1.05;
+  }
+  #game:has(> .play) > .blind h2 {
+    padding: clamp(3px, 1dvh, 9px) 3px;
+    margin: 0;
+    border-radius: 5px;
+    border: 1px solid #1e9be6;
+    box-shadow: inset 0 1px #86c6ed77, 0 3px #071824;
+    text-align: center;
+    background: linear-gradient(#0a8bd9, #08619b);
+    color: #fff4d8;
+    font: 900 clamp(.96rem, 2.8dvh, 1.75rem)/1.05 Georgia,serif;
+  }
+  #game:has(> .play) > .blind .character-status,
+  #game:has(> .play) > .blind .boss-rule {
+    margin: 0;
+    font-size: clamp(.52rem, 1.15vw, .73rem);
+    line-height: 1.1;
+  }
+  #game:has(> .play) > .blind .score {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0 4px;
+    min-height: clamp(34px, 8dvh, 59px);
+    padding: 4px 6px;
+    border: 2px solid #12202b;
+    border-radius: 6px;
+    background: linear-gradient(#38444b,#263039);
+    color: #fff;
+  }
+  #game:has(> .play) > .blind .score span {
+    color: #f1f2f0;
+    font: 800 clamp(.60rem, 1.32vw, .87rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) > .blind .score strong {
+    grid-column: 2;
+    grid-row: 1;
+    color: white;
+    font: 900 clamp(1.35rem, 3.7dvh, 2.25rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) > .blind .score small {
+    grid-column: 1 / -1;
+    text-align: right;
+    color: #d9d7c8;
+    font-size: clamp(.48rem, 1vw, .72rem);
+    margin: 0;
+  }
+  #game:has(> .play) .bl-calculation {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 3px;
+    min-width: 0;
+    padding: 5px;
+    min-height: clamp(61px, 17dvh, 124px);
+    border: 2px solid #13202d;
+    border-radius: 7px;
+    background: #192631;
+  }
+  #game:has(> .play) .bl-hand-name {
+    color: #f3ead2;
+    text-align: center;
+    font: 800 clamp(.58rem, 1.4vw, .83rem)/1.1 system-ui,sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #game:has(> .play) .bl-chip-mult {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(15px, 2.1vw, 26px) minmax(0, 1fr);
+    align-items: center;
+    width: 100%;
+    gap: 0;
+  }
+  #game:has(> .play) .bl-chips,
+  #game:has(> .play) .bl-mult {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    height: clamp(32px, 9dvh, 64px);
+    padding: 0 2px;
+    border-radius: 5px;
+    box-shadow: inset 0 2px #ffffff44, inset 0 -4px #0918274a;
+    color: white;
+    font: 900 clamp(1.05rem, 3.6dvh, 2.45rem)/1 system-ui,sans-serif;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  #game:has(> .play) .bl-chips { background: linear-gradient(#11b8f8,#007ad0); }
+  #game:has(> .play) .bl-mult { background: linear-gradient(#ff635c,#f33343); }
+  #game:has(> .play) .bl-times {
+    text-align: center;
+    color: #ff4f50;
+    font: 900 clamp(1.25rem, 4.2dvh, 2.8rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) .bl-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  #game:has(> .play) .bl-metrics > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2px;
+    border: 2px solid #142433;
+    border-radius: 5px;
+    background: #26333c;
+    min-width: 0;
+  }
+  #game:has(> .play) .bl-metrics span {
+    color: #eee;
+    font: 800 clamp(.56rem, 1.3vw, .78rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) .bl-metrics strong {
+    color: #21a7fa;
+    font: 900 clamp(1.05rem, 3.4dvh, 1.7rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) .bl-metrics > div:last-child strong { color: #ff5757; }
+  #game:has(> .play) .side-controls {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    align-content: start;
+    gap: 4px;
+    margin: 0;
+  }
+  #game:has(> .play) .side-controls .wallet {
+    grid-column: 1 / -1;
+    display: grid;
+    place-items: center;
+    border: 2px solid #142433;
+    border-radius: 5px;
+    background: #27343c;
+    color: #ffc038;
+    font: 900 clamp(1.15rem, 3.7dvh, 2.2rem)/1 system-ui,sans-serif;
+    min-height: clamp(30px, 8dvh, 50px);
+  }
+  #game:has(> .play) .side-controls button {
+    min-height: clamp(29px, 7dvh, 49px);
+    padding: 3px 2px;
+    font: 900 clamp(.64rem, 1.4vw, .82rem)/1.05 system-ui,sans-serif;
+    color: #fff;
+    border-radius: 5px;
+  }
+  #game:has(> .play) .side-controls button[data-action="game-info"] { background: #ef4943; }
+  #game:has(> .play) .side-controls button[data-action="rules"] { background: #df8c0c; }
+  #game:has(> .play) .side-controls button[data-action="score-detail"] { grid-column: 1 / -1; }
+  #game:has(> .play) > .loadout {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 2px 7px;
+    align-items: start;
+  }
+  #game:has(> .play) > .play {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  #game:has(> .play) > .play .preview {
+    text-align: center;
+    justify-content: center;
+    color: #f4f2e8;
+    font: 800 clamp(.61rem, 1.3vw, .83rem)/1.15 system-ui,sans-serif;
+    min-height: 13px;
+  }
+  #game:has(> .play) .joker-collection .joker-fan {
+    height: min(20dvh, 115px);
+    max-height: max(0px, calc(24dvh - 20px));
+  }
+}
+@media (orientation: landscape) and (max-height: 355px) {
+  #game:has(> .play) > .blind { gap: 2px; }
+  #game:has(> .play) > .blind h2 { padding-block: 2px; }
+  #game:has(> .play) .bl-calculation { padding: 2px; min-height: 48px; }
+  #game:has(> .play) .bl-chips, #game:has(> .play) .bl-mult { height: 29px; }
+  #game:has(> .play) .bl-metrics strong { font-size: 1rem; }
+  #game:has(> .play) .side-controls .wallet { min-height: 25px; }
+  #game:has(> .play) .side-controls button { min-height: 27px; }
+}
+#game-info-dialog { width: min(480px, calc(100vw - 28px)); }
+#game-info-list { max-height: min(50dvh, 270px); overflow: auto; padding-left: 1.6em; }
+#game-info-list li { margin: 4px 0; }
