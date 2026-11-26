@@ -2140,7 +2140,7 @@ button.primary {
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
-.loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) > .joker-stack-card:not(:first-child) {
+.loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) > .joker-stack-card:nth-child(n + 6) {
   margin-left: calc(-1 * clamp(11px, 1.8vw, 22px)) !important;
 }
 
@@ -2362,3 +2362,73 @@ button.primary {
 }
 .joker-stack-card.polychrome-joker .joker-made-card { box-shadow: 0 0 7px #fce9af; }
 .joker-stack-card.negative-joker .joker-made-card { box-shadow: 0 0 7px #a691e5; }
+
+/* Full-card illustrations, with the first five kept visible even in a fan. */
+.loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) {
+  gap: clamp(3px, .7vw, 8px);
+}
+.loadout .joker-collection .joker-fan > .joker-stack-card:nth-child(5) { z-index: 99; }
+.joker-card-face.illustrated-joker {
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  isolation: isolate;
+}
+.joker-card-face.illustrated-joker .joker-made-card {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  height: 100%;
+}
+.joker-card-face.illustrated-joker .joker-card-name {
+  position: absolute;
+  inset: auto 2px 2px;
+  width: auto;
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: #101a27ef;
+  color: #fff0c6;
+  font-size: clamp(.45rem, 1.15vw, .65rem);
+}
+.joker-card-face.illustrated-joker .joker-card-edition {
+  top: 6px;
+  right: 3px;
+  transform: none;
+}
+.joker-card-face.illustrated-joker .joker-card-edition.rainbow { left: 3px; right: auto; }
+.joker-stack-card.negative-joker .joker-card-face.illustrated-joker {
+  outline: 1px solid #b69de8;
+  outline-offset: -2px;
+}
+.joker-stack-card.polychrome-joker .joker-card-face.illustrated-joker {
+  outline: 1px solid #f8dd94;
+  outline-offset: -2px;
+}
+#joker-dialog-art {
+  float: left;
+  width: clamp(63px, 12vw, 96px);
+  aspect-ratio: 2 / 3;
+  margin: 0 12px 8px 0;
+}
+#joker-dialog-art .joker-made-card { width: 100%; height: 100%; }
+#joker-dialog > form { clear: both; }
+@media (orientation: landscape) {
+  #game:has(> .play) .loadout .joker-collection .joker-fan {
+    height: max(0px, calc(24dvh - 29px));
+  }
+  #game:has(> .play) .loadout .joker-collection .joker-fan > .joker-stack-card {
+    --joker-width: clamp(30px, calc(16dvh - 21px), 68px);
+    flex-basis: var(--joker-width);
+    width: var(--joker-width);
+  }
+  #game:has(> .play) .joker-collection:has(.casino-tokens) .joker-fan {
+    height: max(0px, calc(24dvh - 43px));
+  }
+}
+
+.shop .joker-made-card, .shop .joker-pack-options .joker-made-card {
+  width: auto;
+  height: clamp(45px, 19dvh, 86px);
+  aspect-ratio: 2 / 3;
+}

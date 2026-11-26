@@ -98,18 +98,17 @@ export function jokerArtwork(joker,id) {
   const p=PALETTES[(id + rank * 2) % PALETTES.length];
   const [base,mid,bright,accent,warm]=p;
   const selected=motifFor(joker,id);
-  const light=rank>=2?'#fff1b0':'#f4edd8';
+  const light = rank >= 2 ? '#ffebb1' : '#f8e8c7';
+  const ornaments = path('M5 15V6H14M36 6H45V15M5 60V69H14M36 69H45V60', null, bright, 1);
   const sparks = [rect(4,4,2,2,bright),rect(36,8,2,2,accent),rect(8,57,2,2,warm),rect(36,57,2,2,bright)].join('');
-  const tiled=Array.from({length:5},(_,n)=>rect(2+(n*9+id*3)%37,7+(n*13+id)%51,2,2,mid)).join('');
-  const illustration=scene(selected,mid,base,bright,warm)+sparks+tiled;
-  const card = '<svg class="joker-pixel-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 75" aria-hidden="true" focusable="false" shape-rendering="crispEdges">'+
-    rect(0,1,50,74,'#0c1220')+rect(1,0,48,73,light)+
-    rect(3,3,44,67,base)+rect(5,5,40,60,mid)+
-    rect(5,5,40,60,base)+
-    '<svg x="5" y="5" width="40" height="60" viewBox="0 0 42 67" overflow="hidden">'+illustration+'</svg>'+
-    rect(3,67,44,3,rank>=2?'#f5c770':'#c6aa79')+
-    rect(4,69,42,1,'#fff1bf')+
-    rect(8,72,34,1,'#5e5144')+
+  const tiled = Array.from({ length: 5 }, (_, n) => rect(2+(n*9+id*3)%37,7+(n*13+id)%51,2,2,mid)).join('');
+  const horizon = path('M0 49L7 46 13 51 20 48 27 53 35 49 42 52V67H0Z', base, mid, 1);
+  const artwork = horizon + tiled + scene(selected, mid, base, bright, warm) + sparks;
+  const card = '<svg class="joker-pixel-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 75" aria-hidden="true" focusable="false" shape-rendering="crispEdges">' +
+    rect(0,0,50,75,'#101829') + rect(1,1,48,73,light) +
+    rect(3,3,44,69,base) + rect(4,4,42,67,mid) + rect(5,5,40,65,base) +
+    '<svg x="4" y="4" width="42" height="67" viewBox="0 0 42 67" overflow="hidden">' + artwork + '</svg>' +
+    ornaments + rect(14,70,22,1,bright) +
     '</svg>';
   return '<span class="joker-illustration joker-made-card" aria-hidden="true" data-art-id="'+id+'">'+card+'</span>';
 }

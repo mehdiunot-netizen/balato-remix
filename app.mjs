@@ -1,5 +1,5 @@
 import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=28';
-import { jokerArtwork } from './joker-art.mjs?v=1';
+import { jokerArtwork } from './joker-art.mjs?v=2';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -701,7 +701,9 @@ game.addEventListener('click', event => {
   if (target.dataset.jokerInfo !== undefined) {
     const slot = Number(target.dataset.jokerInfo);
     if (!Number.isInteger(slot) || slot < 0 || slot >= state.owned.length) return;
-    const joker = jokers[state.owned[slot]];
+    const id = state.owned[slot];
+    const joker = jokers[id];
+    document.querySelector('#joker-dialog-art').innerHTML = jokerPortrait(id, joker.mark);
     document.querySelector('#joker-dialog-title').textContent = joker.name;
     document.querySelector('#joker-dialog-text').textContent = joker.text;
     const editions = [
