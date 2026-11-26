@@ -25,7 +25,7 @@ const CLASSIC_ROUNDS = 24;
 export const characters = [
   { id: 'classique', name: 'Sans personnage', mark: '♠', text: 'Règles classiques, sans bonus.' },
   { id: 'riche', name: 'Le Riche', mark: '¤', text: '+10 crédits au début de la partie.' },
-  { id: 'chanceux', name: 'Le Chanceux', mark: '✦', text: 'Une carte de ton paquet reçoit un Augure aléatoire, fixé par la seed.' },
+  { id: 'chanceux', name: 'Le Chanceux', mark: '✦', text: 'Une carte de ton paquet reçoit un Tarot aléatoire, fixé par la seed.' },
   { id: 'as-copieur', name: 'L’As Copieur', mark: '⌘', text: 'Commence avec ADN : la première main de chaque blinde copie la carte jouée seule dans le paquet et dans ta main.' },
   { id: 'negatif', name: 'Le Négatif', mark: '◐', text: 'Tous les jokers achetés sont négatifs : ils ne prennent pas de place.' },
   { id: 'multiplieur', name: 'Le Multiplieur', mark: '✺', text: 'Commence avec un joker polychrome aléatoire qui donne ×1,5 au multiplicateur final.' },
@@ -99,13 +99,13 @@ export const augures = {
 /* Choose one of three overlapping blinds per round. Skip always grants ALL
    three rewards. Bonus tags are distinct from the consumable inventory. */
 export const casinoRooms = [
-  { name: 'Salon des augures', mark: '✧', reward: 'pack', info: 'Une pochette d’Augures offerte' },
+  { name: 'Salon des tarots', mark: '✧', reward: 'pack', info: 'Un pack Tarot offert' },
   { name: 'Salle des mains', mark: '♠', reward: 'hands', info: '+3 mains à la prochaine blinde' },
   { name: 'Coffre doré', mark: '¤', reward: 'coins', info: '+4 crédits immédiatement' },
   { name: 'Hall négatif', mark: '◐', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
   { name: 'Salle du boss', mark: '★', reward: 'boss', info: '+10 crédits après la prochaine victoire contre un boss' },
   { name: 'Tour des mains', mark: '♜', reward: 'hands', info: '+3 mains à la prochaine blinde' },
-  { name: 'Pochette secrète', mark: '✺', reward: 'pack', info: 'Une pochette d’Augures offerte' },
+  { name: 'Pochette Tarot secrète', mark: '✺', reward: 'pack', info: 'Un pack Tarot offert' },
   { name: 'Épreuve du boss', mark: '⚑', reward: 'boss', info: '+10 crédits après la prochaine victoire contre un boss' },
   { name: 'Reflet noir', mark: '◫', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
 ];
