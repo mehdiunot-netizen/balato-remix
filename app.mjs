@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=22';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=23';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -112,6 +112,26 @@ function persist() {
   }
 }
 
+/* Keep the chosen visual order even when cards are selected or replaced. */
+function displayedHand(run) {
+  const sorted = [...run.hand].sort((a, b) => b.rank - a.rank || a.suit.localeCompare(b.suit));
+  const lookup = new Map(sorted.map(card => [card.id, card]));
+  const order = (run.handOrder ?? []).filter(id => lookup.has(id));
+  for (const card of sorted) if (!order.includes(card.id)) order.push(card.id);
+  return order.map(id => lookup.get(id));
+}
+
+function moveHandCard(run, sourceId, targetId) {
+  if (run.phase !== 'play' || sourceId === targetId) return run;
+  const ids = displayedHand(run).map(card => card.id);
+  const from = ids.indexOf(sourceId);
+  const to = ids.indexOf(targetId);
+  if (from < 0 || to < 0) return run;
+  ids.splice(from, 1);
+  ids.splice(to, 0, sourceId);
+  return { ...run, handOrder: ids };
+}
+
 function render(focus, scored = false) {
   const casinoChoices = state.phase === 'casino' ? casinoOffers(state) : [];
   const casinoTiles = state.phase === 'casino' ? casinoBoard(state) : [];
@@ -123,7 +143,7 @@ function render(focus, scored = false) {
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
-    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${['shop', 'play', 'casino'].includes(state.phase) ? ' reorderable-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
+    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${state.owned.length > 1 ? ' reorderable-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
       <button type="button" class="joker-card-face" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
@@ -150,7 +170,7 @@ function render(focus, scored = false) {
 
   let content;
   if (state.phase === 'play') {
-    const cards = [...state.hand].sort((a, b) => b.rank - a.rank || a.suit.localeCompare(b.suit));
+    const cards = displayedHand(state);
     const preview = selected.size ? previewHand(state, cards.filter(c => selected.has(c.id))) : null;
     content = `
       <section class="play" aria-label="Main en cours">
@@ -159,7 +179,7 @@ function render(focus, scored = false) {
           const rank = faces[card.rank] || card.rank;
           return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''} ${card.augure || ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
             aria-label="${court[card.rank] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}${card.augure ? ' · ' + augures[card.augure].name : ''}" aria-pressed="${selected.has(card.id)}"
-            ${selected.size === 5 && !selected.has(card.id) ? 'disabled' : ''}>
+            aria-disabled="${selected.size === 5 && !selected.has(card.id)}">
             <span class="rank" aria-hidden="true">${rank}<small>${card.suit}</small></span>
             <span class="card-art" aria-hidden="true">${cardArt(card)}</span>
             ${card.augure ? `<span class="augure-mark" aria-hidden="true">${augures[card.augure].mark}</span>` : ''}
@@ -329,6 +349,7 @@ function render(focus, scored = false) {
 
 /* Drag-to-sell on touch and mouse: never sell unless released in the box. */
 let jokerDrag = null;
+let cardDrag = null;
 let suppressDragClick = false;
 
 function dragOverSellZone(zone, x, y) {
@@ -349,6 +370,7 @@ function cleanupJokerDrag(pointerId, x, y, cancelled = false) {
   game.querySelector('.joker-reorder-target')?.classList.remove('joker-reorder-target');
   if (drag.card.hasPointerCapture?.(pointerId)) drag.card.releasePointerCapture(pointerId);
   drag.ghost?.remove();
+  drag.card.classList.remove('drag-source');
   drag.zone?.remove();
   if (!drag.started) return;
 
@@ -387,7 +409,7 @@ game.addEventListener('click', event => {
 }, true);
 
 game.addEventListener('pointerdown', event => {
-  if (!['shop', 'play', 'casino'].includes(state?.phase) || jokerDrag ||
+  if (!state || jokerDrag || cardDrag ||
       (event.target.closest('button') && !event.target.closest('.joker-card-face')) ||
       (event.pointerType === 'mouse' && event.button !== 0)) return;
   const card = event.target.closest('.reorderable-joker');
@@ -402,11 +424,44 @@ game.addEventListener('pointerdown', event => {
 });
 
 
+/* Playing cards also follow the finger; a drag changes their order, a tap selects. */
+function cleanupCardDrag(pointerId, x, y, cancelled = false) {
+  if (!cardDrag || cardDrag.pointerId !== pointerId) return;
+  const drag = cardDrag;
+  cardDrag = null;
+  const target = !cancelled && drag.started
+    ? document.elementFromPoint(x, y)?.closest('.cards [data-card]') : null;
+  game.querySelector('.hand-drop-target')?.classList.remove('hand-drop-target');
+  if (drag.card.hasPointerCapture?.(pointerId)) drag.card.releasePointerCapture(pointerId);
+  drag.card.classList.remove('hand-drag-source');
+  drag.ghost?.remove();
+  if (!drag.started) return;
+  suppressDragClick = true;
+  window.setTimeout(() => { suppressDragClick = false; }, 120);
+  if (!target) return;
+  const next = moveHandCard(state, drag.id, target.dataset.card);
+  if (next === state) return;
+  state = next;
+  persist();
+  render('[data-card="' + drag.id + '"]');
+  announcement.textContent = 'Ordre des cartes modifié.';
+}
+
+game.addEventListener('pointerdown', event => {
+  if (state?.phase !== 'play' || jokerDrag || cardDrag ||
+      (event.pointerType === 'mouse' && event.button !== 0)) return;
+  const card = event.target.closest('.cards [data-card]');
+  if (!card) return;
+  cardDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY,
+    card, id: card.dataset.card, started: false, ghost: null };
+  try { card.setPointerCapture(event.pointerId); } catch { /* Not all browsers support capture. */ }
+});
+
 /* On iOS keep the viewport fixed; only panels with their own scrollbar pan. */
 document.addEventListener('touchmove', event => {
   if (!event.cancelable) return;
   const scrollArea = event.target.closest?.('.shop .offers, .prune-cards, .loadout, .blind, .finish, dialog.rules');
-  if (jokerDrag || !scrollArea) event.preventDefault();
+  if (jokerDrag || cardDrag || !scrollArea) event.preventDefault();
 }, { passive: false });
 
 document.addEventListener('pointermove', event => {
@@ -423,13 +478,14 @@ document.addEventListener('pointermove', event => {
     document.body.append(zone);
     drag.zone = zone;
     }
-    const ghost = document.createElement('div');
-    ghost.className = 'joker-drag-ghost';
-    const mark = document.createElement('span');
-    mark.className = 'joker-drag-mark';
-    mark.textContent = jokers[drag.id].mark;
-    ghost.append(mark, document.createTextNode(jokers[drag.id].name));
+    const ghost = drag.card.querySelector('.joker-card-face').cloneNode(true);
+    const rect = drag.card.getBoundingClientRect();
+    ghost.removeAttribute('data-joker-info');
+    ghost.classList.add('joker-card-ghost');
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
     document.body.append(ghost);
+    drag.card.classList.add('drag-source');
     drag.ghost = ghost;
   }
   if (!drag.started) return;
@@ -444,11 +500,40 @@ document.addEventListener('pointermove', event => {
   }
 }, { passive: false });
 
+document.addEventListener('pointermove', event => {
+  const drag = cardDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  const { clientX: x, clientY: y } = event;
+  if (!drag.started && Math.hypot(x - drag.x, y - drag.y) > 8) {
+    drag.started = true;
+    const rect = drag.card.getBoundingClientRect();
+    const ghost = drag.card.cloneNode(true);
+    ghost.classList.add('hand-drag-ghost');
+    ghost.removeAttribute('data-card');
+    ghost.removeAttribute('aria-pressed');
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    ghost.disabled = true;
+    document.body.append(ghost);
+    drag.card.classList.add('hand-drag-source');
+    drag.ghost = ghost;
+  }
+  if (!drag.started) return;
+  event.preventDefault();
+  drag.ghost.style.left = x + 'px';
+  drag.ghost.style.top = y + 'px';
+  game.querySelector('.hand-drop-target')?.classList.remove('hand-drop-target');
+  const over = document.elementFromPoint(x, y)?.closest('.cards [data-card]');
+  if (over && over !== drag.card) over.classList.add('hand-drop-target');
+}, { passive: false });
+
 document.addEventListener('pointerup', event => {
   cleanupJokerDrag(event.pointerId, event.clientX, event.clientY);
+  cleanupCardDrag(event.pointerId, event.clientX, event.clientY);
 });
 document.addEventListener('pointercancel', event => {
   cleanupJokerDrag(event.pointerId, event.clientX, event.clientY, true);
+  cleanupCardDrag(event.pointerId, event.clientX, event.clientY, true);
 });
 
 game.addEventListener('click', event => {
