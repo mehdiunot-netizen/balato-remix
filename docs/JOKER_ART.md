@@ -56,3 +56,7 @@ The gameplay engine, nine blinds, saves and consumable touch behavior are untouc
 - New original compact portrait: `art/chambre-echo.webp` (56×72 WebP), distinct from the tiny first cell of the v2 sprite sheet.
 - `app.mjs` selects this dedicated image only for stable joker ID **13**, in equipped jokers, the shop and joker packs.
 - `style.css` uses `.joker-chambre-echo` to show the complete portrait, also in polychrome edition. All other portrait mappings remain unchanged.
+
+## v38 — Full catalogue pixel Joker cards
+Every Joker now uses an illustrated 50×75 SVG card via `joker-art.mjs`, including shop and boosters. The frame recreates the look and proportions of a CC0 blank card; the illustrations and colors are original. The source pack used as a design reference is **Jfred — Pixel Cards** (`https://jfredd.itch.io/pixel-cards`), distributed under CC0 1.0. The original ZIP was not imported or redistributed. The matching reusable blank source is `art/joker-blank.svg`.
+The original raster sheets remain in the repository for backwards reference; they are not used by the new Joker card component. Numeric Joker IDs, the nine blinds, and save data are unchanged.
