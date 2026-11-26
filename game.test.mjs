@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -444,7 +444,8 @@ test('trois blindes se chevauchent : chaque choix est jouable indépendamment', 
   const start = startInCasino('CASINO-THREE');
   const offers = casinoOffers(start);
   assert.equal(offers.length, 3);
-  assert.deepEqual(offers.map(x => x.blind.kind), ['Petite blinde', 'Grosse blinde', 'Boss']);
+  assert.deepEqual(offers.map(x => x.blind.kind), ['Petite blinde','Petite blinde','Petite blinde']);
+  assert.deepEqual(casinoBoard(start).map(x=>x.column),[0,0,0,1,1,1,2,2,2]);
   for (const lane of [0, 1, 2]) {
     const chosen = chooseCasinoRoom(start, lane);
     assert.equal(chosen.phase, 'play');
@@ -479,7 +480,7 @@ test('le mode infini existant accède aux trois blindes sans perte de partie', (
   const picked = chooseCasinoRoom(selection, 2);
   assert.equal(picked.round, 32);
   assert.equal(picked.selectedBlind.kind, 'Boss');
-  assert.equal(skipCasinoRow(selection).round, 32);
+  assert.equal(skipCasinoRow(selection),selection);
 });
 test('les récompenses de Skip sont utilisables mais pas revendables comme consommables', () => {
   const state = skipCasinoRow(startInCasino('FREE-PACK'));
@@ -515,4 +516,35 @@ test('sauvegarde d’une nouvelle partie en casino et d’un Skip triple', () =>
   const skipped = skipCasinoRow(first);
   assert.equal(skipped.casinoSkipSummary.length, 3);
   assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(skipped))), skipped);
+});
+
+test('carte de neuf blindes avec trois petites à gauche, trois moyennes puis boss',()=>{
+ const s=startInCasino('NEUF'), nodes=casinoBoard(s);
+ assert.equal(nodes.length,9);
+ assert.deepEqual(nodes.map(n=>n.blind.kind),['Petite blinde','Petite blinde','Petite blinde','Grosse blinde','Grosse blinde','Grosse blinde','Boss','Boss','Boss']);
+ assert.deepEqual(nodes.filter(n=>n.reachable).map(n=>n.lane),[0,1,2]);
+});
+test('bifurcation vers les rangées voisines uniquement',()=>{
+ const s=startInCasino('CHEMINS');
+ const a=chooseCasinoRoom(s,0);
+ const mid=openCasino({...a,phase:'shop'});
+ assert.deepEqual(casinoOffers(mid).filter(n=>n.reachable).map(n=>n.lane),[0,1]);
+ assert.equal(chooseCasinoRoom(mid,2),mid);
+ const b=chooseCasinoRoom(mid,1),boss=openCasino({...b,phase:'shop'});
+ assert.deepEqual(casinoOffers(boss).filter(n=>n.reachable).map(n=>n.lane),[0,1,2]);
+ assert.equal(skipCasinoRow(boss),boss);
+ assert.equal(chooseCasinoRoom(boss,2).selectedBlind.kind,'Boss');
+});
+test('Skip de colonne : exactement trois bonus, boss non skippable et sauvegarde',()=>{
+ const s=startInCasino('TRIPLE'),one=skipCasinoRow(s),two=skipCasinoRow(one);
+ assert.equal(one.freeCasinoPacks,1);
+ assert.equal(one.credits,s.credits+4);
+ assert.equal(one.casinoPath.length,1);
+ assert.deepEqual(casinoOffers(one).map(n=>n.blind.kind),['Grosse blinde','Grosse blinde','Grosse blinde']);
+ assert.equal(two.casinoSkipSummary.length,3);
+ assert.equal(two.casinoTags.length,4);
+ assert.equal(two.casinoPath.length,2);
+ assert.equal(casinoOffers(two)[0].blind.kind,'Boss');
+ assert.equal(skipCasinoRow(two),two);
+ assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(two))),two);
 });

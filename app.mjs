@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=21';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=22';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -114,6 +114,7 @@ function persist() {
 
 function render(focus, scored = false) {
   const casinoChoices = state.phase === 'casino' ? casinoOffers(state) : [];
+  const casinoTiles = state.phase === 'casino' ? casinoBoard(state) : [];
   const blind = state.phase === 'casino' ? casinoChoices[0]?.blind : blindFor(state);
   const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
   const loadout = state.owned.map((id, index) => {
@@ -175,30 +176,36 @@ function render(focus, scored = false) {
       </section>`;
   } else if (state.phase === 'casino') {
     const skipped = state.casinoSkipSummary ?? [];
+    const col = (state.round + 1) % 3;
+    const columns = ['Petites blindes','Blindes moyennes','Boss blindes'];
+    const links = [0,1].flatMap(c => [0,1,2].flatMap(y =>
+      [0,1,2].filter(v => Math.abs(y-v) <= 1).map(v =>
+        `<line x1="${c===0?295:595}" y1="${50+y*100}"
+          x2="${c===0?305:605}" y2="${50+v*100}"/>`))).join('');
     content = `
-      <section class="casino-board" aria-label="Choix des trois blindes">
-        <header class="casino-heading"><h3 tabindex="-1">Choisis ta prochaine blinde</h3>
-        <p>Joue une des trois blindes, ou passe pour recevoir leurs trois bonus.</p></header>
-        <div class="casino-blind-fan">
-          ${casinoChoices.map(({ lane, blind: choice, reward }) => `
-            <button type="button" class="casino-blind-card casino-blind-${lane}"
-              data-casino-lane="${lane}" style="--casino-order:${lane}"
-              aria-label="Jouer ${choice.name}, objectif ${choice.target} points. Skip : ${reward.info}">
-              <span class="casino-blind-icon" aria-hidden="true">${['♠','♜','★'][lane]}</span>
-              <strong>${choice.name}</strong>
-              <span class="casino-blind-target">${scoreFormat.format(choice.target)} pts</span>
-              ${choice.rule ? `<small class="casino-rule">${choice.rule}</small>` : ''}
-              <span class="casino-blind-tag"><b>Bonus de Skip</b><small>${reward.info}</small></span>
-              <span class="casino-blind-choose">Jouer</span>
+      <section class="casino-board" aria-label="Carte des neuf blindes">
+        <header class="casino-heading"><h3 tabindex="-1">Parcours des blindes</h3>
+          <p>Gauche → droite · ${columns[col]} · suis les chemins lumineux</p></header>
+        <div class="casino-map" role="group" aria-label="Trois petites, trois moyennes et trois boss">
+          <svg class="casino-path-links" viewBox="0 0 900 300" preserveAspectRatio="none" aria-hidden="true">${links}</svg>
+          ${casinoTiles.map(({ column,lane,blind:choice,reward,active,reachable,visited,skipped:wasSkipped }) => `
+            <button type="button" class="casino-node casino-${['small','medium','boss'][column]}${active?' is-current':''}${reachable?' is-reachable':''}${visited?' is-visited':''}${wasSkipped?' is-skipped':''}"
+              style="grid-column:${column+1};grid-row:${lane+1}"
+              ${reachable?'data-casino-lane="'+lane+'"':'disabled'}
+              aria-label="${choice.name}, objectif ${scoreFormat.format(choice.target)} points. ${column===2?choice.rule:'Bonus Skip : '+reward.info}. ${reachable?'Jouer':'Inaccessible'}">
+              <span class="casino-node-top"><span class="casino-node-type">${['PETITE','MOYENNE','BOSS'][column]}</span>
+                <span class="casino-node-rank">${['I','II','III'][lane]}</span></span>
+              <span class="casino-node-center"><span class="casino-node-medal" aria-hidden="true">${['♠','◆','✦'][column]}</span>
+                <strong>${scoreFormat.format(choice.target)}</strong></span>
+              <span class="casino-node-footer">${column===2?choice.rule:reward.info}</span>
             </button>`).join('')}
         </div>
         <div class="casino-commands">
-          <button type="button" class="primary casino-skip-all" data-action="casino-skip">
-            Skip · récupérer les 3 bonus</button>
-          ${(state.freeCasinoPacks ?? 0) > 0 ? `<button data-action="casino-bonus-pack">
-            ✧ Pochette offerte (${state.freeCasinoPacks})</button>` : ''}
+          ${col < 2 ? `<button class="primary casino-skip-all" data-action="casino-skip">SKIP ${columns[col]} · récupérer 3 bonus</button>` :
+            '<span class="casino-boss-hint">✦ Boss obligatoire · choisis une blinde</span>'}
+          ${(state.freeCasinoPacks??0)>0?`<button data-action="casino-bonus-pack">✧ Pochette offerte (${state.freeCasinoPacks})</button>`:''}
         </div>
-        ${skipped.length ? `<p class="casino-skip-summary" role="status">3 bonus récupérés : ${skipped.join(' · ')}</p>` : ''}
+        ${skipped.length?`<p class="casino-skip-summary" role="status">3 bonus gagnés : ${skipped.join(' · ')}</p>`:''}
       </section>`;
   } else if (state.phase === 'eclipse') {
     content = `
@@ -296,11 +303,11 @@ function render(focus, scored = false) {
   game.innerHTML = `
     <section class="blind" aria-labelledby="blind-name">
       <span class="eyebrow">${state.legacy ? 'Blinde ' + (state.round + 1) + ' / 6' : state.endless ? 'Infini · Mise ' + blind.ante : 'Mise ' + blind.ante + ' / 8' }</span>
-      <h2 id="blind-name" tabindex="-1">${state.phase === 'casino' ? 'Sélection des blindes' : blind.name}</h2>
+      <h2 id="blind-name" tabindex="-1">${state.phase === 'casino' ? 'Carte des 9 blindes' : blind.name}</h2>
       ${activeCharacter.id !== 'classique' ? `<p class="character-status" title="${activeCharacter.text}"><span aria-hidden="true">${activeCharacter.mark}</span> ${activeCharacter.name}</p>` : ''}
       ${state.phase !== 'casino' && blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
-      <div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
-      ${state.phase !== 'casino' ? `<progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>` : '<p class="casino-panel-note">Trois blindes au choix · Skip = trois bonus</p>'}
+      ${state.phase !== 'casino' ? `<div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>` : ''}
+      ${state.phase !== 'casino' ? `<progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>` : '<p class="casino-panel-note">3 petites → 3 moyennes → 3 boss · progression horizontale</p>'}
       ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
       <div class="side-controls">
         <span class="wallet">${state.credits} crédits${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
@@ -552,7 +559,7 @@ game.addEventListener('click', event => {
   else if (target.dataset.useConsumable !== undefined) announcement.textContent = 'Consommable utilisé.';
   else if (target.dataset.buyConsumable !== undefined) announcement.textContent = 'Consommable rangé dans l’inventaire.';
   else if (target.dataset.augureTarget !== undefined) announcement.textContent = 'Carte améliorée.';
-  else if (action === 'casino-skip') announcement.textContent = 'Blinde passée : trois bonus récupérés.';
+  else if (action === 'casino-skip') announcement.textContent = 'Colonne passée : trois bonus récupérés.';
   else if (target.dataset.casinoLane !== undefined) announcement.textContent = 'Blinde choisie.';
 });
 

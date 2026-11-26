@@ -115,17 +115,35 @@ export function casinoAvailable(state) {
     (state.endless || state.round + 1 < CLASSIC_ROUNDS);
 }
 
-export function casinoOffers(state) {
+// Nine distinct blinds, three per column, travelled from left to right.
+export function casinoBoard(state) {
   if (!casinoAvailable(state) && state.phase !== 'casino') return [];
   const nextRound = state.round + 1;
   if (!state.endless && nextRound >= CLASSIC_ROUNDS) return [];
-  const ante = Math.floor(nextRound / 3);
-  const rewardRow = ((nextRound % 3) + 3) % 3;
-  return [0, 1, 2].map(lane => ({
-    lane,
-    blind: blindAt(ante * 3 + lane),
-    reward: casinoRooms[rewardRow * 3 + lane],
+  const anteIndex = Math.floor(nextRound / 3);
+  const step = nextRound % 3;
+  const prior = (state.casinoPath ?? []).find(entry => entry.round === nextRound - 1);
+  const priorLane = prior?.lane ?? null;
+  const visits = (state.casinoPath ?? []).filter(entry =>
+    entry.round >= anteIndex * 3 && entry.round < anteIndex * 3 + 3);
+  return [0,1,2].flatMap(column => [0,1,2].map(lane => {
+    const base = blindAt(anteIndex * 3 + column);
+    const boss = column === 2 ? bosses[(anteIndex + lane) % bosses.length] : null;
+    const blind = {
+      ...base, ...(boss ?? {}),
+      name: column === 0 ? 'Petite blinde ' + (lane + 1) :
+        column === 1 ? 'Grosse blinde ' + (lane + 1) : boss.name,
+      target: Math.round(base.target * (1 + lane * .12) / 5) * 5,
+    };
+    const visit = visits.find(entry => entry.round === anteIndex * 3 + column);
+    return { column, lane, blind, reward: casinoRooms[column * 3 + lane],
+      active: column === step,
+      reachable: column === step && (step === 0 || priorLane === null || Math.abs(lane-priorLane) <= 1),
+      visited: visit?.lane === lane, skipped: visit?.lane === null, completed: column < step };
   }));
+}
+export function casinoOffers(state) {
+  return casinoBoard(state).filter(offer => offer.active);
 }
 export function openCasino(state) {
   if (state.phase !== 'shop' || !casinoAvailable(state)) return state;
@@ -141,7 +159,7 @@ export function startInCasino(seed = createSeed(), character = 'classique') {
 export function chooseCasinoRoom(state, lane) {
   if (state.phase !== 'casino' || !Number.isInteger(lane)) return state;
   const offer = casinoOffers(state).find(choice => choice.lane === lane);
-  if (!offer) return state;
+  if (!offer || !offer.reachable) return state;
   const nextRound = state.round + 1;
   const path = [...(state.casinoPath ?? []), { round: nextRound, lane }];
   return deal({ ...state, round: nextRound, target: undefined,
@@ -161,8 +179,8 @@ function addCasinoTag(state, room, roomId, nextRound) {
 export function skipCasinoRow(state) {
   if (state.phase !== 'casino') return state;
   const offers = casinoOffers(state);
-  if (offers.length !== 3) return state;
   const nextRound = state.round + 1;
+  if (offers.length !== 3 || nextRound % 3 === 2) return state;
   let next = { ...state };
   // Atomic skip: all three tags from the visible blind cards, with no selection.
   for (const option of offers)
