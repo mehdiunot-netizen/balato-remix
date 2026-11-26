@@ -1736,7 +1736,6 @@ button.primary {
    the score engine and multiplier values are not touched. */
 @media (orientation: landscape) {
   #game:has(> .play) {
-    grid-template-columns: clamp(147px, 19.3vw, 296px);
     grid-template-columns: clamp(147px, 19.3vw, 296px) minmax(0, 1fr);
     grid-template-rows: minmax(0, 24dvh) minmax(0, 1fr);
     gap: 0;
@@ -1945,3 +1944,142 @@ button.primary {
 #game-info-dialog { width: min(480px, calc(100vw - 28px)); }
 #game-info-list { max-height: min(50dvh, 270px); overflow: auto; padding-left: 1.6em; }
 #game-info-list li { margin: 4px 0; }
+
+
+/* v31 — screenshot-sized blind objective, sort controls, and right-side deck. */
+@media (orientation: landscape) {
+  #game:has(> .play) .bl-goal {
+    display: grid;
+    grid-template-columns: minmax(0,.4fr) minmax(0,.6fr);
+    align-items: center;
+    gap: 3px;
+    min-height: clamp(70px, 23dvh, 166px);
+    padding: 4px;
+    border: 2px solid #0c263c;
+    border-radius: 7px;
+    background: #173e5c;
+  }
+  #game:has(> .play) .bl-goal-medal {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 3px;
+    border: 3px dashed #456eb4;
+    border-radius: 50%;
+    background: radial-gradient(circle at center,#264685,#192844 75%);
+    color: #e3f1ff;
+    text-align: center;
+    font: 900 clamp(.52rem, 1.5vw, .86rem)/.95 system-ui,sans-serif;
+    overflow-wrap: anywhere;
+  }
+  #game:has(> .play) .bl-goal-text {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1px,.5dvh,4px);
+    align-items: center;
+    justify-content: space-around;
+    min-width: 0;
+    min-height: 65%;
+    padding: 3px;
+    border-radius: 5px;
+    background: #28343d;
+    color: #f4f0e6;
+    text-align: center;
+  }
+  #game:has(> .play) .bl-goal-text span {
+    font: 800 clamp(.50rem,1.15vw,.77rem)/1.05 system-ui,sans-serif;
+  }
+  #game:has(> .play) .bl-goal-text strong {
+    color: #ff6559;
+    font: 900 clamp(.92rem, 3dvh, 1.9rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) .bl-goal-text small {
+    color: #ffcd74;
+    font: 700 clamp(.47rem, 1.1vw, .73rem)/1.12 system-ui,sans-serif;
+  }
+  #game:has(> .play) .play .actions {
+    display: grid;
+    grid-template-columns: minmax(74px,1fr) minmax(96px,1.14fr) minmax(74px,1fr) clamp(63px,9vw,107px);
+    align-items: end;
+    gap: clamp(3px,.8vw,8px);
+    padding-inline: 2px;
+  }
+  #game:has(> .play) .play .actions > .hand-action {
+    min-height: clamp(40px, 11dvh, 78px);
+    padding: 4px;
+    border: 3px solid #414b53;
+    border-radius: 8px;
+    background: #353d42;
+    font: 900 clamp(.73rem,1.8vw,1.13rem)/1.07 system-ui,sans-serif;
+    color: #eee9e3;
+  }
+  #game:has(> .play) .play .actions > .hand-action:disabled {
+    color: #77797c;
+    background: #383d42;
+  }
+  #game:has(> .play) .play .sort-hand {
+    display: grid;
+    gap: 3px;
+    align-content: center;
+    min-height: clamp(43px, 12dvh, 90px);
+    padding: 3px;
+    border: 3px solid #eee9cf;
+    border-radius: 8px;
+    background: #285e56;
+  }
+  #game:has(> .play) .play .sort-hand > span {
+    color: #fffee7;
+    text-align: center;
+    font: 850 clamp(.60rem,1.4vw,.90rem)/1 system-ui,sans-serif;
+  }
+  #game:has(> .play) .play .sort-hand > div { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  #game:has(> .play) .play .sort-hand button {
+    width: 100%;
+    min-height: clamp(27px, 6dvh, 44px);
+    padding: 2px;
+    border: 0;
+    border-radius: 5px;
+    background: linear-gradient(#ffbb41,#ed8408);
+    color: white;
+    font: 900 clamp(.54rem, 1.25vw, .8rem)/1.05 system-ui,sans-serif;
+  }
+  #game:has(> .play) .play .deck-counter {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 3px;
+    align-items: center;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: clamp(65px, 16dvh, 126px);
+    padding: 0;
+    background: transparent;
+  }
+  #game:has(> .play) .play .deck-back {
+    display: grid;
+    place-items: center;
+    width: clamp(41px, 6.8vw, 89px);
+    aspect-ratio: .75;
+    border: 4px solid #fff8d8;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0 #242c3d, 0 2px 12px #0008;
+    background: repeating-radial-gradient(circle at 45% 45%,#344d94 0 4px,#e1c05a 5px 8px,#26447f 9px 12px);
+    color: #ffdd72;
+    font: 900 clamp(1.2rem,3dvh,2rem) Georgia,serif;
+  }
+  #game:has(> .play) .play .deck-counter small {
+    color: #fff;
+    margin: 0;
+    font: 800 clamp(.54rem,1.3vw,.8rem)/1 system-ui,sans-serif;
+  }
+}
+@media (orientation: landscape) and (max-height: 355px) {
+  #game:has(> .play) .bl-goal { min-height: 61px; }
+  #game:has(> .play) .bl-goal-medal { border-width: 2px; }
+  #game:has(> .play) .play .actions > .hand-action { min-height: 35px; }
+  #game:has(> .play) .play .sort-hand { min-height: 40px; }
+  #game:has(> .play) .play .deck-counter { min-height: 50px; }
+  #game:has(> .play) .play .deck-back { width: 35px; }
+}
