@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./emblem.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./touch.png">
-  <link rel="stylesheet" href="./style.css?v=29">
+  <link rel="stylesheet" href="./style.css?v=30">
   <title>Contre-Pli</title>
 </head>
 <body>
@@ -75,6 +75,12 @@
     <p id="score-detail-total"></p>
     <form method="dialog"><button class="primary">Retour</button></form>
   </dialog>
+  <dialog class="rules" id="game-info-dialog" aria-labelledby="game-info-title">
+    <h2 id="game-info-title">Partie Infos</h2>
+    <p id="game-info-summary"></p>
+    <ol id="game-info-list"></ol>
+    <form method="dialog"><button class="primary">Fermer</button></form>
+  </dialog>
   <dialog class="rules deck-dialog" id="deck-dialog" aria-labelledby="deck-dialog-title">
     <h2 id="deck-dialog-title">Ton paquet</h2>
     <p id="deck-summary" aria-live="polite"></p>
@@ -88,6 +94,6 @@
     <button type="button" id="joker-dialog-sell" class="sell-joker" hidden>Vendre</button>
     <form method="dialog"><button class="primary">Fermer</button></form>
   </dialog>
-  <script type="module" src="./app.mjs?v=27"></script>
+  <script type="module" src="./app.mjs?v=28"></script>
 </body>
 </html>
