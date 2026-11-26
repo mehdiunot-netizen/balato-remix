@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, characterFor, characters, chooseAugure, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, shopPrice, start, useCards, useConsumable } from './game.mjs?v=18';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=20';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -55,7 +55,7 @@ document.querySelector('#new-run').addEventListener('click', openCharacterPicker
 document.querySelector('#cancel-seed').addEventListener('click', () => seedDialog.close());
 document.querySelector('#seed-form').addEventListener('submit', event => {
   event.preventDefault();
-  state = start(seedInput.value.trim() || undefined, characterSelect.value);
+  state = startInCasino(seedInput.value.trim() || undefined, characterSelect.value);
   saleNotice = null;
   seedDialog.close();
   showTable();
@@ -112,7 +112,8 @@ function persist() {
 }
 
 function render(focus, scored = false) {
-  const blind = blindFor(state);
+  const casinoChoices = state.phase === 'casino' ? casinoOffers(state) : [];
+  const blind = state.phase === 'casino' ? casinoChoices[0]?.blind : blindFor(state);
   const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
   const loadout = state.owned.map((id, index) => {
     const { mark, name } = jokers[id];
@@ -170,6 +171,33 @@ function render(focus, scored = false) {
           <button class="primary" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
           <button data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser <small>${state.discards} restantes</small></button>
         </div>
+      </section>`;
+  } else if (state.phase === 'casino') {
+    const skipped = state.casinoSkipSummary ?? [];
+    content = `
+      <section class="casino-board" aria-label="Choix des trois blindes">
+        <header class="casino-heading"><h3 tabindex="-1">Choisis ta prochaine blinde</h3>
+        <p>Joue une des trois blindes, ou passe pour recevoir leurs trois bonus.</p></header>
+        <div class="casino-blind-fan">
+          ${casinoChoices.map(({ lane, blind: choice, reward }) => `
+            <button type="button" class="casino-blind-card casino-blind-${lane}"
+              data-casino-lane="${lane}" style="--casino-order:${lane}"
+              aria-label="Jouer ${choice.name}, objectif ${choice.target} points. Skip : ${reward.info}">
+              <span class="casino-blind-icon" aria-hidden="true">${['♠','♜','★'][lane]}</span>
+              <strong>${choice.name}</strong>
+              <span class="casino-blind-target">${scoreFormat.format(choice.target)} pts</span>
+              ${choice.rule ? `<small class="casino-rule">${choice.rule}</small>` : ''}
+              <span class="casino-blind-tag"><b>Bonus de Skip</b><small>${reward.info}</small></span>
+              <span class="casino-blind-choose">Jouer</span>
+            </button>`).join('')}
+        </div>
+        <div class="casino-commands">
+          <button type="button" class="primary casino-skip-all" data-action="casino-skip">
+            Skip · récupérer les 3 bonus</button>
+          ${(state.freeCasinoPacks ?? 0) > 0 ? `<button data-action="casino-bonus-pack">
+            ✧ Pochette offerte (${state.freeCasinoPacks})</button>` : ''}
+        </div>
+        ${skipped.length ? `<p class="casino-skip-summary" role="status">3 bonus récupérés : ${skipped.join(' · ')}</p>` : ''}
       </section>`;
   } else if (state.phase === 'eclipse') {
     content = `
@@ -260,14 +288,18 @@ function render(focus, scored = false) {
       </section>`;
   }
 
+  const tokenLabels = [
+    ...(state.casinoTags ?? []).map(tag => tag.label + (tag.remaining !== null && tag.remaining !== undefined ? ' · ' + tag.remaining + ' blinde(s)' : '')),
+    ...Array.from({ length: state.freeCasinoPacks ?? 0 }, () => 'Pochette offerte · à ouvrir au choix de blinde'),
+  ];
   game.innerHTML = `
     <section class="blind" aria-labelledby="blind-name">
       <span class="eyebrow">${state.legacy ? 'Blinde ' + (state.round + 1) + ' / 6' : state.endless ? 'Infini · Mise ' + blind.ante : 'Mise ' + blind.ante + ' / 8' }</span>
-      <h2 id="blind-name" tabindex="-1">${blind.name}</h2>
+      <h2 id="blind-name" tabindex="-1">${state.phase === 'casino' ? 'Sélection des blindes' : blind.name}</h2>
       ${activeCharacter.id !== 'classique' ? `<p class="character-status" title="${activeCharacter.text}"><span aria-hidden="true">${activeCharacter.mark}</span> ${activeCharacter.name}</p>` : ''}
-      ${blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
+      ${state.phase !== 'casino' && blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
       <div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
-      <progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>
+      ${state.phase !== 'casino' ? `<progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>` : '<p class="casino-panel-note">Trois blindes au choix · Skip = trois bonus</p>'}
       ${state.last ? `<p>Dernière main · ${state.last.name} · +${state.last.total}</p>` : ''}
       <div class="side-controls">
         <span class="wallet">${state.credits} crédits${saleNotice ? `<strong class="wallet-gain">${saleNotice}</strong>` : ""}</span>
@@ -278,7 +310,8 @@ function render(focus, scored = false) {
     ${content}
     <section class="loadout ${state.character === 'magicien' ? 'character-magicien' : ''}" aria-label="Inventaire">
       <div class="joker-collection"><h3>Jokers <span>${state.character === 'negatif' ? state.owned.length + ' · ∞' : jokerSlotsUsed(state) + '/3'}</span></h3>
-        ${loadout ? '<ul class="joker-fan" aria-label="Jokers équipés, toucher pour voir les détails">' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</div>
+        ${loadout ? '<ul class="joker-fan" aria-label="Jokers équipés, toucher pour voir les détails">' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}
+        ${tokenLabels.length ? `<div class="casino-tokens" aria-label="Bonus de Skip en attente">${tokenLabels.map(label => `<span class="casino-token" title="${label}">✦ ${label}</span>`).join('')}</div>` : ''}</div>
       <div class="consumables"><h3>Consommables <span>${inventory.length}/${capacity}</span></h3>
         <div class="consumable-slots">${consumableSlots}</div></div>
     </section>`;
@@ -466,7 +499,10 @@ game.addEventListener('click', event => {
   else if (action === 'open-eclipse') next = openEclipse(state);
   else if (action === 'skip-eclipse') next = chooseEclipse(state, null);
   else if (target.dataset.eclipse !== undefined) next = chooseEclipse(state, target.dataset.eclipse);
-  else if (action === 'advance') next = advance(state);
+  else if (target.dataset.casinoLane !== undefined) next = chooseCasinoRoom(state, Number(target.dataset.casinoLane));
+  else if (action === 'casino-skip') next = skipCasinoRow(state);
+  else if (action === 'casino-bonus-pack') next = openCasinoBonusPack(state);
+  else if (action === 'advance') next = state.legacy ? advance(state) : openCasino(state);
   else if (action === 'endless') next = continueRun(state);
   else if (action === 'restart') {
     selected.clear();
@@ -491,6 +527,8 @@ game.addEventListener('click', event => {
   else if (target.dataset.useConsumable !== undefined) announcement.textContent = 'Consommable utilisé.';
   else if (target.dataset.buyConsumable !== undefined) announcement.textContent = 'Consommable rangé dans l’inventaire.';
   else if (target.dataset.augureTarget !== undefined) announcement.textContent = 'Carte améliorée.';
+  else if (action === 'casino-skip') announcement.textContent = 'Blinde passée : trois bonus récupérés.';
+  else if (target.dataset.casinoLane !== undefined) announcement.textContent = 'Blinde choisie.';
 });
 
 jokerDialogSell.addEventListener('click', () => {

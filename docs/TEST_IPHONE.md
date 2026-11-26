@@ -65,3 +65,11 @@ Aucune fusion de la pull request #1 tant que le test réel n'est pas validé. Co
 - [ ] Depuis la fenêtre de détails d'un joker en boutique, vérifier le bouton de revente alternatif.
 - [ ] Avec Le Négatif, accumuler plus de trois jokers : la rangée reste dans la zone du jeu et défile horizontalement, sans déplacer la page entière.
 - [ ] Vérifier que les consommables et les boutons d'action ne sont pas recouverts par les cartes.
+
+## v20 — trois blindes au choix et Skip triple
+- [ ] À la création d'une nouvelle partie, voir trois cartes de blindes chevauchées ; chacune reste sélectionnable.
+- [ ] Choisir Petite, Grosse ou Boss, comparer objectif et restrictions ; un choix lance uniquement la blinde choisie.
+- [ ] Sur la sélection, appuyer une seule fois sur « Skip · récupérer les 3 bonus ». Vérifier que la partie avance d'un cran et affiche exactement les trois récompenses annoncées, sans demander quel bonus choisir.
+- [ ] Vérifier le bonus crédit immédiat (+4), les +3 mains à la prochaine blinde, les bonus différés ainsi que les pochettes gratuites ; aucune de ces récompenses ne doit occuper un emplacement de consommable.
+- [ ] Gagner une blinde ; « Blinde suivante » revient à trois propositions superposées. Reprendre une ancienne sauvegarde en boutique en mode infini, puis retrouver le même choix.
+- [ ] Fermer et rouvrir Safari : options, crédits, skips, jetons et mode infini doivent être persistés.

@@ -1160,3 +1160,87 @@ button.primary {
   .joker-card-face { padding: 2px; }
   .joker-card-name { font-size: .52rem; }
 }
+
+/* v20 — three fully selectable, overlapping blind cards; one Skip grants all
+   three visible rewards, stored as separate tags rather than consumables. */
+.casino-board {
+  display: flex; flex-direction: column; align-items: stretch;
+  justify-content: center; gap: clamp(5px, 1.5dvh, 12px);
+  min-width: 0; min-height: 0; overflow: hidden;
+  padding: clamp(6px, 1dvh, 12px);
+  background: transparent;
+}
+.casino-heading { text-align: center; }
+.casino-heading h3 { color: #f7dea7; font-size: clamp(1.05rem, 2vw, 1.45rem); }
+.casino-heading p { color: #e0d8bb; font-size: .78rem; margin-top: 4px; }
+.casino-blind-fan {
+  display: flex; align-items: center; justify-content: center; min-width: 0;
+  width: 100%; margin: 0 auto; padding: 3px 0;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin;
+  touch-action: pan-x;
+}
+.casino-blind-card {
+  z-index: calc(1 + var(--casino-order));
+  flex: 0 0 clamp(126px, 21vw, 177px);
+  width: clamp(126px, 21vw, 177px);
+  min-width: 0; height: clamp(166px, 42dvh, 236px);
+  margin: 0 0 0 -20px; padding: 9px 8px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  align-items: center; gap: 3px; text-align: center;
+  border: 2px solid #c7a369 !important; border-radius: 9px;
+  background: linear-gradient(148deg, #214e59f2, #122a3ff7) !important;
+  box-shadow: 0 3px 13px #06121daa !important;
+  color: #fff0c7; position: relative;
+  touch-action: manipulation; transition: transform 120ms ease;
+}
+.casino-blind-card:first-child { margin-left: 0; border-color: #86b8e3 !important; }
+.casino-blind-card:last-child { border-color: #d89bca !important; }
+.casino-blind-card:focus-visible, .casino-blind-card:hover {
+  z-index: 10; transform: translateY(-5px);
+  outline: 2px solid #ffe7b1; outline-offset: 1px;
+}
+.casino-blind-icon { font: bold clamp(1.5rem, 3.5vw, 2.2rem) Georgia,serif; color: #edcf88; }
+.casino-blind-card strong { line-height: 1.05; font-size: clamp(.81rem, 1.8vw, 1.02rem); }
+.casino-blind-target { font: 900 clamp(.93rem, 2.2vw, 1.35rem)/1.15 system-ui,sans-serif; color: #ffcab1; }
+.casino-rule { color: #d9d0d7; font-size: .63rem; line-height: 1.12; }
+.casino-blind-tag {
+  width: 100%; display: flex; flex-direction: column; gap: 2px;
+  padding: 4px; border: 1px solid #c7a96a67; border-radius: 5px;
+  background: #061c2b99; line-height: 1.12;
+}
+.casino-blind-tag b { color: #ffe0a4; font-size: .63rem; }
+.casino-blind-tag small { font-size: clamp(.59rem, 1.2vw, .7rem); }
+.casino-blind-choose {
+  width: 100%; padding: 5px 0; border-radius: 5px;
+  color: #09252f; background: #e4b96c; font-weight: 800; font-size: .83rem;
+}
+.casino-commands { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.casino-skip-all { min-height: 38px; padding-inline: 14px !important; }
+.casino-skip-summary {
+  margin: 0 auto; padding: 4px 9px; max-width: 100%; overflow: auto;
+  border-radius: 4px; color: #ffe4a2; font-size: .72rem;
+  background: #09222e9c;
+}
+.casino-panel-note { font-size: .75rem; color: #e7c999; }
+.casino-tokens {
+  display: flex; gap: 4px; align-items: center; max-width: 100%;
+  overflow-x: auto; padding: 2px 1px; scrollbar-width: thin;
+}
+.casino-token {
+  flex: 0 0 auto; max-width: 180px; padding: 2px 5px;
+  border: 1px solid #e0c18586; border-radius: 4px;
+  color: #ffdf9a; background: #0b2e399c; font-size: .65rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.joker-collection:has(.casino-tokens) .joker-fan { height: 61px; }
+.joker-collection:has(.casino-tokens) .joker-stack-card { height: 59px; }
+.joker-collection:has(.casino-tokens) .joker-card-face .card-emblem { width: 26px; height: 26px; }
+@media (orientation: landscape) and (max-height: 360px) {
+  .casino-board { gap: 4px; padding: 3px; }
+  .casino-heading p { display: none; }
+  .casino-blind-card { height: min(45dvh, 168px); padding: 4px; }
+  .casino-blind-icon { font-size: 1.2rem; }
+  .casino-rule { display: none; }
+  .casino-commands button { min-height: 31px; padding-block: 3px; }
+  .casino-token { font-size: .59rem; }
+}

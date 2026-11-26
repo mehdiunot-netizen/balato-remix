@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -438,4 +438,57 @@ test('Le Magicien conserve quatre consommables sans les imposer aux autres', () 
   assert.equal(buyConsumable(s, consumableOffer(s).id), s);
   const next = advance(s);
   assert.equal(next.consumables.length, 4);
+});
+
+test('trois blindes se chevauchent : chaque choix est jouable indépendamment', () => {
+  const start = startInCasino('CASINO-THREE');
+  const offers = casinoOffers(start);
+  assert.equal(offers.length, 3);
+  assert.deepEqual(offers.map(x => x.blind.kind), ['Petite blinde', 'Grosse blinde', 'Boss']);
+  for (const lane of [0, 1, 2]) {
+    const chosen = chooseCasinoRoom(start, lane);
+    assert.equal(chosen.phase, 'play');
+    assert.equal(chosen.round, 0);
+    assert.equal(chosen.selectedBlind.kind, offers[lane].blind.kind);
+  }
+  assert.equal(chooseCasinoRoom(start, 3), start);
+});
+test('Skip : tous les trois bonus sans choisir et sans objet consommable', () => {
+  const state = startInCasino('SKIP-ALL');
+  const skipped = skipCasinoRow(state);
+  assert.equal(skipped.round, 0);
+  assert.equal(skipped.phase, 'casino');
+  assert.equal(skipped.casinoSkipSummary.length, 3);
+  assert.equal(skipped.credits, state.credits + 4);
+  assert.equal(skipped.freeCasinoPacks, 1);
+  assert.equal(skipped.casinoTags.length, 1);
+  assert.equal(skipped.casinoTags[0].kind, 'hands');
+  assert.deepEqual(skipped.consumables, []);
+  assert.deepEqual(skipCasinoRow(state), skipped);
+  assert.equal(chooseCasinoRoom(skipped, 1).plays, 7);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(skipped))), skipped);
+});
+test('le mode infini existant accède aux trois blindes sans perte de partie', () => {
+  const existing = { ...start('OLD-ENDLESS'), phase: 'shop', round: 31, endless: true,
+    credits: 123, owned: [0], consumables: ['bourse'] };
+  const selection = openCasino(existing);
+  assert.equal(selection.phase, 'casino');
+  assert.equal(selection.round, 31);
+  assert.equal(selection.credits, 123);
+  assert.deepEqual(selection.consumables, ['bourse']);
+  const picked = chooseCasinoRoom(selection, 2);
+  assert.equal(picked.round, 32);
+  assert.equal(picked.selectedBlind.kind, 'Boss');
+  assert.equal(skipCasinoRow(selection).round, 32);
+});
+test('les récompenses de Skip sont utilisables mais pas revendables comme consommables', () => {
+  const state = skipCasinoRow(startInCasino('FREE-PACK'));
+  const opened = openCasinoBonusPack(state);
+  assert.equal(opened.phase, 'pack');
+  assert.equal(opened.returnToCasino, true);
+  assert.equal(opened.freeCasinoPacks, 0);
+  const next = chooseAugure(opened, null);
+  assert.equal(next.phase, 'casino');
+  assert.equal(next.consumables.length, 0);
+  assert.equal(openCasinoBonusPack(next), next);
 });
