@@ -354,12 +354,12 @@ export function start(seed = createSeed(), character = 'classique') {
   if (chosen === 'copieur-supreme') state.owned = [jokers.findIndex(j => j.key === 'plan')];
   if (chosen === 'multiplieur') {
     const ordinary = jokers.map((j, i) => ({ j, i }))
-      .filter(({ j }) => !j.legendary && !j.copyNext && j.key !== 'adn');
+      .filter(({ j }) => !j.legendary && !j.copyNext && j.key !== 'adn' && !j.prototype);
     state.owned = [ordinary[Math.floor(random() * ordinary.length)].i];
     state.polychromeSlots = [0];
   }
   if (chosen === 'joueur') {
-    const legendary = jokers.map((j, i) => ({ j, i })).filter(({ j }) => j.legendary);
+    const legendary = jokers.map((j, i) => ({ j, i })).filter(({ j }) => j.legendary && !j.prototype);
     state.owned = [legendary[Math.floor(random() * legendary.length)].i];
   }
   return deal(state);
@@ -444,7 +444,7 @@ export function useCards(state, ids, action) {
       next.phase = lastLegacyBlind || classicWin ? 'win' : 'shop';
       if (!lastLegacyBlind) {
         const available = jokers.slice(0, state.catalogSize ?? 7).map((_, i) => i)
-          .filter(i => !state.owned.includes(i) && !jokers[i].legendary);
+          .filter(i => !state.owned.includes(i) && !jokers[i].legendary && !jokers[i].prototype);
         next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
       }
       return next;

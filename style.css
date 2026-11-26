@@ -1244,3 +1244,8 @@ button.primary {
   .casino-commands button { min-height: 31px; padding-block: 3px; }
   .casino-token { font-size: .59rem; }
 }
+
+/* Place the blind selector into the same stage as the cards and shop. */
+@media (orientation: landscape) {
+  #game > .casino-board { grid-column: 2; grid-row: 2; align-self: stretch; }
+}

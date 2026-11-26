@@ -64,8 +64,10 @@ const neutralBonus = () => [0, 0, 1];
 const markFor = (rarity, kind) => kind === 'scored' ? '✦' : kind === 'held' ? '◆' :
   rarity === 'legendary' ? '★' : rarity === 'rare' ? '✷' : '◇';
 const addBalatro = (key, name, price, text, props = {}, rarity = 'common') => {
+  // These prototype definitions are not offered until their complex effects
+  // (retrigger/copy/held-card sequencing) are implemented and regression-tested.
   jokers.push({ key, name, mark: markFor(rarity, props.scoredBonus ? 'scored' : props.heldBonus ? 'held' : ''),
-    price, text, rarity, bonus: neutralBonus, ...props });
+    price, text, rarity, prototype: true, bonus: neutralBonus, ...props });
 };
 const indep = (key, name, price, text, bonus, rarity = 'common') =>
   addBalatro(key, name, price, text, { bonus }, rarity);

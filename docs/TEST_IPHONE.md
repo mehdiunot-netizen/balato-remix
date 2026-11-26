@@ -73,3 +73,5 @@ Aucune fusion de la pull request #1 tant que le test réel n'est pas validé. Co
 - [ ] Vérifier le bonus crédit immédiat (+4), les +3 mains à la prochaine blinde, les bonus différés ainsi que les pochettes gratuites ; aucune de ces récompenses ne doit occuper un emplacement de consommable.
 - [ ] Gagner une blinde ; « Blinde suivante » revient à trois propositions superposées. Reprendre une ancienne sauvegarde en boutique en mode infini, puis retrouver le même choix.
 - [ ] Fermer et rouvrir Safari : options, crédits, skips, jetons et mode infini doivent être persistés.
+
+- [ ] Dans les premières boutiques du nouveau mode, vérifier que les jokers prototypes incomplets ne sont pas encore proposés.
