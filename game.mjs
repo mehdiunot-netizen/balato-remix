@@ -222,8 +222,13 @@ function resolveCasinoTagsOnDeal(state) {
 }
 
 export const packs = [
-  { name: 'Pochette d’augures', price: 4, count: 3 },
-  { name: 'Grande pochette', price: 6, count: 5 },
+  { name: 'Pack Tarot', price: 4, count: 3 },
+  { name: 'Grand pack Tarot', price: 6, count: 5 },
+  { name: 'Pack Tarot géant', price: 8, count: 6 },
+];
+export const jokerPacks = [
+  { name: 'Pack Joker', price: 4, count: 2 },
+  { name: 'Grand pack Joker', price: 6, count: 4 },
 ];
 
 // Two reusable inventory slots; purchase offers follow the same seed as the run.
@@ -551,7 +556,52 @@ export function offeredPack(state) {
   const { count } = augureOptions(state);
   if (count < packs[0].count) return undefined;
   const random = seededRandom(state.seed, 'pack-offer', state.round);
-  return count >= packs[1].count && random() < 0.25 ? 1 : 0;
+  const roll = random();
+  return count >= packs[2].count && roll < 0.12 ? 2 :
+    count >= packs[1].count && roll < 0.35 ? 1 : 0;
+}
+
+function jokerPackCandidates(state) {
+  return jokers.map((joker, id) => ({ joker, id }))
+    .filter(({ joker, id }) => id < (state.catalogSize ?? jokers.length) &&
+      !state.owned.includes(id) && !joker.legendary && !joker.prototype)
+    .map(({ id }) => id);
+}
+
+export function offeredJokerPack(state) {
+  if (state.phase !== 'shop' || state.jokerPackBought ||
+      (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3)) return undefined;
+  const count = jokerPackCandidates(state).length;
+  if (count < jokerPacks[0].count) return undefined;
+  const random = seededRandom(state.seed, 'joker-pack-offer', state.round);
+  return count >= jokerPacks[1].count && random() < 0.3 ? 1 : 0;
+}
+
+// Drawing a joker pack never modifies the shop offers or the saved collection.
+// The selected joker is added only after a valid choice.
+export function openJokerPack(state, id) {
+  const pack = jokerPacks[id];
+  if (!pack || offeredJokerPack(state) !== id ||
+      state.credits < shopPrice(state, pack.price)) return state;
+  const available = jokerPackCandidates(state);
+  const choices = shuffle(available,
+    seededRandom(state.seed, 'joker-pack-contents', state.round)).slice(0, pack.count);
+  if (choices.length !== pack.count) return state;
+  return { ...state, phase: 'joker-pack', jokerPackBought: true,
+    credits: state.credits - shopPrice(state, pack.price), jokerPackChoices: choices };
+}
+
+export function chooseJokerPack(state, id) {
+  if (state.phase !== 'joker-pack') return state;
+  if (id === null) return { ...state, phase: 'shop', jokerPackChoices: [] };
+  if (!Number.isInteger(id) || !state.jokerPackChoices?.includes(id) ||
+      state.owned.includes(id) || !jokers[id] ||
+      (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3)) return state;
+  return { ...state, phase: 'shop', jokerPackChoices: [],
+    owned: [...state.owned, id],
+    negativeSlots: state.character === 'negatif'
+      ? [...(state.negativeSlots ?? []), state.owned.length] : state.negativeSlots,
+    offers: (state.offers ?? []).filter(offer => offer !== id) };
 }
 
 export function openPack(state, id) {
