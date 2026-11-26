@@ -57,3 +57,11 @@ Aucune fusion de la pull request #1 tant que le test réel n'est pas validé. Co
 - [ ] L’As Copieur : jouer une carte seule à la première main puis retrouver sa copie la blinde suivante ; Le Tricheur : bonus première main sur chaque main.
 - [ ] Reprendre une ancienne sauvegarde v17 : elle reste jouable sans effacer les objets, crédits ou la seed.
 - [ ] Le menu de personnage défile à l'intérieur de la boîte sur iPhone paysage sans bouger le plateau.
+
+## v19 — Cartes de jokers chevauchées
+- [ ] En paysage, les jokers sont de petites cartes verticales qui se chevauchent pour gagner de la place, en conservant le symbole et un nom abrégé lisible.
+- [ ] Toucher chacun des jokers, y compris ceux partiellement recouverts : ouvrir ses détails dans une fenêtre et la fermer.
+- [ ] En boutique, glisser chacun des jokers (même recouvert) vers la zone « VENDRE » ; la bonne carte est vendue et les crédits augmentent.
+- [ ] Depuis la fenêtre de détails d'un joker en boutique, vérifier le bouton de revente alternatif.
+- [ ] Avec Le Négatif, accumuler plus de trois jokers : la rangée reste dans la zone du jeu et défile horizontalement, sans déplacer la page entière.
+- [ ] Vérifier que les consommables et les boutons d'action ne sont pas recouverts par les cartes.

@@ -1035,3 +1035,128 @@ button.primary {
   #character-medallion { width: 47px; height: 47px; font-size: 1.4rem; }
   #seed-form { gap: 6px; }
 }
+
+/* v19 — compact overlapping portrait joker cards; all cards remain tappable. */
+.joker-collection {
+  overflow: hidden;
+  min-height: 0;
+}
+.joker-collection .joker-fan {
+  display: flex;
+  position: relative;
+  align-items: flex-start;
+  height: 86px;
+  max-height: none;
+  margin: 2px 0 0;
+  padding: 2px 7px 3px 2px;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+}
+.loadout .joker-fan > .joker-stack-card {
+  --card-width: clamp(56px, 7.8vw, 69px);
+  --overlap: clamp(15px, 2.6vw, 23px);
+  display: block;
+  position: relative;
+  z-index: calc(1 + var(--joker-order));
+  flex: 0 0 var(--card-width);
+  width: var(--card-width);
+  height: 78px;
+  min-width: 0;
+  margin: 0 0 0 calc(-1 * var(--overlap));
+  padding: 0;
+  border: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none;
+}
+.loadout .joker-fan > .joker-stack-card:first-child { margin-left: 0; }
+.loadout .joker-fan > .joker-stack-card:focus-within,
+.loadout .joker-fan > .joker-stack-card:hover { z-index: 100; }
+.joker-card-face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 3px 3px 4px;
+  gap: 1px;
+  border: 2px solid #e1b77a;
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 25% 15%, #efe0b62d, transparent 45%),
+    repeating-linear-gradient(145deg, #c6ad8423 0 1px, transparent 1px 6px),
+    linear-gradient(155deg, #41515b, #1a293d);
+  box-shadow: 1px 2px 6px #07121dbb;
+  color: #ffedc8;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+  overflow: hidden;
+  text-shadow: 0 1px 2px #061725;
+}
+.joker-card-face:focus-visible { outline: 3px solid #ffdf94; outline-offset: -1px; }
+.joker-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: #ffe5a9;
+  font: 800 .62rem/1 Georgia, serif;
+}
+.joker-card-top span { font: 700 .52rem/1 system-ui, sans-serif; }
+.joker-card-face .card-emblem {
+  flex: 0 0 auto;
+  width: clamp(30px, 4.7vw, 38px);
+  height: clamp(30px, 4.7vw, 38px);
+  border-radius: 5px;
+  box-shadow: inset 0 1px #f3deb4a9;
+}
+.joker-card-name {
+  width: 100%;
+  margin-top: 1px;
+  text-align: center;
+  font: 750 clamp(.50rem, 1.25vw, .63rem)/1.05 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.joker-card-edition {
+  position: absolute;
+  right: -1px;
+  top: 16px;
+  padding: 1px 2px;
+  background: #745aa6;
+  color: #fff;
+  font-size: .48rem;
+  transform: rotate(9deg);
+}
+.joker-card-edition.rainbow {
+  left: -1px; right: auto; background: #3f8f8a;
+}
+.joker-stack-card.negative-joker .joker-card-face {
+  border-color: #c2a7ff;
+  box-shadow: inset 0 0 0 1px #8f75ce70, 1px 2px 5px #07121dbb;
+}
+.joker-stack-card.polychrome-joker .joker-card-face {
+  border-color: #ffedab;
+  background: linear-gradient(140deg, #365d6b, #725a86 50%, #6e6757);
+}
+.joker-detail { width: min(375px, calc(100vw - 28px)); }
+.joker-detail h2 { margin-bottom: 9px; color: #ffe6b3; }
+.joker-detail #joker-dialog-editions { color: #ffda9e; font-size: .84rem; }
+.joker-detail #joker-dialog-sell { margin-top: 13px; }
+.joker-detail form button { width: 100%; margin-top: 8px; }
+@media (orientation: landscape) and (max-height: 360px) {
+  .joker-collection .joker-fan { height: 72px; padding-block: 1px; }
+  .loadout .joker-fan > .joker-stack-card { height: 67px; --card-width: 57px; --overlap: 17px; }
+  .joker-card-face .card-emblem { width: 29px; height: 29px; }
+  .joker-card-face { padding: 2px; }
+  .joker-card-name { font-size: .52rem; }
+}

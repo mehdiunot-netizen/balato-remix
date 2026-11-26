@@ -14,6 +14,8 @@ const lobby = document.querySelector('.lobby');
 const enter = document.querySelector('#enter');
 const rules = document.querySelector('#rules');
 const scoreDialog = document.querySelector('#score-dialog');
+const jokerDialog = document.querySelector('#joker-dialog');
+const jokerDialogSell = document.querySelector('#joker-dialog-sell');
 const seedDialog = document.querySelector('#seed-dialog');
 const seedInput = document.querySelector('#seed input');
 const characterSelect = document.querySelector('#character-select');
@@ -113,13 +115,21 @@ function render(focus, scored = false) {
   const blind = blindFor(state);
   const activations = state.last?.steps?.filter(step => step.id !== undefined) ?? [];
   const loadout = state.owned.map((id, index) => {
-    const { mark, name, text } = jokers[id];
+    const { mark, name } = jokers[id];
     const activation = activations.findIndex(step => step.slot === undefined ? step.id === id : step.slot === index);
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
-    return `<li class="${pulse ? 'triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong>${emblem(id, mark)}
-      ${name}${negative ? ' · Négatif' : ''}${polychrome ? ' · Polychrome' : ''}</strong>${state.phase === 'shop' ? '<span class="drag-hint" aria-hidden="true">⇢ Glisser</span>' : ''}</summary><small>${text}</small>${state.phase === "shop" ? `<button type="button" class="sell-joker" data-sell="${index}" aria-label="Vendre ${name} pour ${Math.max(1, Math.floor(jokers[id].price / 2))} crédits">Vendre · +${Math.max(1, Math.floor(jokers[id].price / 2))} cr.</button>` : ""}</details></li>`;
+    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
+      <button type="button" class="joker-card-face" data-joker-info="${index}"
+        aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
+        <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
+        ${emblem(id, mark)}
+        <span class="joker-card-name">${name}</span>
+        ${negative ? '<span class="joker-card-edition" aria-hidden="true">NÉG.</span>' : ''}
+        ${polychrome ? '<span class="joker-card-edition rainbow" aria-hidden="true">POLY.</span>' : ''}
+      </button>
+    </li>`;
   }).join('');
 
   const inventory = state.consumables ?? [];
@@ -268,7 +278,7 @@ function render(focus, scored = false) {
     ${content}
     <section class="loadout ${state.character === 'magicien' ? 'character-magicien' : ''}" aria-label="Inventaire">
       <div class="joker-collection"><h3>Jokers <span>${state.character === 'negatif' ? state.owned.length + ' · ∞' : jokerSlotsUsed(state) + '/3'}</span></h3>
-        ${loadout ? '<ul>' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</div>
+        ${loadout ? '<ul class="joker-fan" aria-label="Jokers équipés, toucher pour voir les détails">' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</div>
       <div class="consumables"><h3>Consommables <span>${inventory.length}/${capacity}</span></h3>
         <div class="consumable-slots">${consumableSlots}</div></div>
     </section>`;
@@ -320,7 +330,7 @@ game.addEventListener('click', event => {
 
 game.addEventListener('pointerdown', event => {
   if (state?.phase !== 'shop' || jokerDrag ||
-      event.target.closest('button') ||
+      (event.target.closest('button') && !event.target.closest('.joker-card-face')) ||
       (event.pointerType === 'mouse' && event.button !== 0)) return;
   const card = event.target.closest('.draggable-joker');
   if (!card) return;
@@ -380,6 +390,23 @@ game.addEventListener('click', event => {
   const target = event.target.closest('button');
   if (!target) return;
   const { card, action } = target.dataset;
+  if (target.dataset.jokerInfo !== undefined) {
+    const slot = Number(target.dataset.jokerInfo);
+    if (!Number.isInteger(slot) || slot < 0 || slot >= state.owned.length) return;
+    const joker = jokers[state.owned[slot]];
+    document.querySelector('#joker-dialog-title').textContent = joker.name;
+    document.querySelector('#joker-dialog-text').textContent = joker.text;
+    const editions = [
+      state.negativeSlots?.includes(slot) ? 'Négatif : aucune place utilisée' : '',
+      state.polychromeSlots?.includes(slot) ? 'Polychrome : ×1,5 au multiplicateur final' : '',
+    ].filter(Boolean);
+    document.querySelector('#joker-dialog-editions').textContent = editions.join(' · ');
+    jokerDialogSell.dataset.sellSlot = String(slot);
+    jokerDialogSell.textContent = 'Vendre · +' + Math.max(1, Math.floor(joker.price / 2)) + ' crédits';
+    jokerDialogSell.hidden = state.phase !== 'shop';
+    jokerDialog.showModal();
+    return;
+  }
   if (target.dataset.prune) {
     const id = target.dataset.prune;
     if (selected.has(id)) selected.delete(id);
@@ -464,6 +491,21 @@ game.addEventListener('click', event => {
   else if (target.dataset.useConsumable !== undefined) announcement.textContent = 'Consommable utilisé.';
   else if (target.dataset.buyConsumable !== undefined) announcement.textContent = 'Consommable rangé dans l’inventaire.';
   else if (target.dataset.augureTarget !== undefined) announcement.textContent = 'Carte améliorée.';
+});
+
+jokerDialogSell.addEventListener('click', () => {
+  const slot = Number(jokerDialogSell.dataset.sellSlot);
+  const previous = state;
+  const next = sellJoker(state, slot);
+  if (next === previous) return;
+  const earned = next.credits - previous.credits;
+  state = next;
+  saleNotice = '+' + earned + ' crédits';
+  selected.clear();
+  persist();
+  jokerDialog.close();
+  render('h3[tabindex="-1"]');
+  announcement.textContent = 'Joker vendu pour ' + earned + ' crédits.';
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
