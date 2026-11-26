@@ -92,6 +92,100 @@ export const augures = {
   prune: { name: 'Fil coupé', mark: '✂', text: 'Retire définitivement de une à cinq cartes de ton choix.' },
   wild: { name: 'Caméléon', mark: '✺', text: 'Compte comme n’importe quelle enseigne, sans changer son rang.' },
 };
+
+/* Casino: three rows of three rooms. Skips award the three distinct row tags.
+   Tags are not consumables; they activate only when their conditions are met. */
+export const casinoRooms = [
+  { name: 'Salon des augures', mark: '✧', reward: 'pack', info: 'Une pochette d’Augures offerte' },
+  { name: 'Salle des mains', mark: '♠', reward: 'hands', info: '+3 mains à la prochaine blinde' },
+  { name: 'Coffre doré', mark: '¤', reward: 'coins', info: '+4 crédits immédiatement' },
+  { name: 'Hall négatif', mark: '◐', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
+  { name: 'Salle du boss', mark: '★', reward: 'boss', info: '+10 crédits après la prochaine victoire contre un boss' },
+  { name: 'Tour des mains', mark: '♜', reward: 'hands', info: '+3 mains à la prochaine blinde' },
+  { name: 'Pochette secrète', mark: '✺', reward: 'pack', info: 'Une pochette d’Augures offerte' },
+  { name: 'Épreuve du boss', mark: '⚑', reward: 'boss', info: '+10 crédits après la prochaine victoire contre un boss' },
+  { name: 'Reflet noir', mark: '◫', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
+];
+
+function casinoRow(state) { return (state.round + 1) % 3; }
+function currentFloor(state) { return Math.floor((state.round + 1) / 3); }
+function validCasinoLane(state, lane) {
+  if (!Number.isInteger(lane) || lane < 0 || lane > 2) return false;
+  if (casinoRow(state) === 0) return true;
+  const last = [...(state.casinoPath ?? [])].reverse()
+    .find(item => item.floor === currentFloor(state) && item.lane !== null);
+  return !last || Math.abs(last.lane - lane) <= 1;
+}
+export function casinoAvailable(state) {
+  return !state.legacy && Boolean(blindFor({ ...state, round: state.round + 1, target: undefined }));
+}
+export function openCasino(state) {
+  if (state.phase !== 'shop' || !casinoAvailable(state)) return state;
+  return { ...state, phase: 'casino' };
+}
+export function startInCasino(seed = createSeed(), character = 'classique') {
+  const s = start(seed, character);
+  return { ...s, phase: 'casino', round: -1, target: undefined };
+}
+export function chooseCasinoRoom(state, lane) {
+  if (state.phase !== 'casino' || !validCasinoLane(state, lane)) return state;
+  const row = casinoRow(state);
+  const path = [...(state.casinoPath ?? []), { floor: currentFloor(state), row, lane }];
+  const ready = { ...state, phase: 'shop', casinoPath: path, casinoLane: lane };
+  return advance(ready);
+}
+function addCasinoTag(state, kind, room, floor) {
+  if (kind === 'coins') return { ...state, credits: state.credits + 4 };
+  if (kind === 'pack') return { ...state, freeCasinoPacks: (state.freeCasinoPacks ?? 0) + 1 };
+  const tags = state.casinoTags ?? [];
+  return { ...state, casinoTags: [...tags, {
+    id: 'tag-' + floor + '-' + room + '-' + (state.casinoPath?.length ?? 0),
+    kind, label: casinoRooms[room].info,
+    remaining: kind === 'negative' ? 3 : null,
+  }] };
+}
+export function skipCasinoRow(state) {
+  if (state.phase !== 'casino') return state;
+  const row = casinoRow(state), floor = currentFloor(state);
+  let next = { ...state };
+  for (let lane = 0; lane < 3; lane++) {
+    const room = row * 3 + lane;
+    next = addCasinoTag(next, casinoRooms[room].reward, room, floor);
+  }
+  next = { ...next, casinoPath: [...(next.casinoPath ?? []), { floor, row, lane: null }], round: state.round + 1 };
+  if (!next.endless && next.round === CLASSIC_ROUNDS - 1) return { ...next, phase: 'win' };
+  return next;
+}
+export function openCasinoBonusPack(state) {
+  if (state.phase !== 'casino' || !(state.freeCasinoPacks > 0)) return state;
+  const { candidates, kinds } = augureOptions(state);
+  const eligibleKinds = kinds.filter(kind => kind === 'prune' || candidates.length);
+  if (!eligibleKinds.length) return state;
+  const random = seededRandom(state.seed, 'casino-bonus-pack', (state.casinoPath ?? []).length + state.round * 53);
+  const available = shuffle(eligibleKinds, random);
+  const drawn = shuffle(candidates, random);
+  const choices = available.slice(0, 3).map((augure, index) =>
+    augure === 'prune' ? { id: 'prune', augure } : { ...(drawn[index % drawn.length]), augure });
+  return { ...state, phase: 'pack', choices,
+    freeCasinoPacks: state.freeCasinoPacks - 1, returnToCasino: true };
+}
+function resolveCasinoTagsOnDeal(state) {
+  let extraHands = 0;
+  const keep = [];
+  const negativeSlots = [...(state.negativeSlots ?? [])];
+  const random = seededRandom(state.seed, 'casino-negative', state.round);
+  for (const tag of state.casinoTags ?? []) {
+    if (tag.kind === 'hands') { extraHands += 3; continue; }
+    if (tag.kind !== 'negative') { keep.push(tag); continue; }
+    if (tag.remaining > 1) { keep.push({ ...tag, remaining: tag.remaining - 1 }); continue; }
+    const eligible = state.owned.map((id,index)=>index).filter(i=>!negativeSlots.includes(i));
+    if (!eligible.length) { keep.push({ ...tag, remaining: 0 }); continue; }
+    const drawn = shuffle(eligible, random).slice(0, 2);
+    negativeSlots.push(...drawn);
+  }
+  return { ...state, negativeSlots, casinoTags: keep, casinoExtraHands: extraHands };
+}
+
 export const packs = [
   { name: 'Pochette d’augures', price: 4, count: 3 },
   { name: 'Grande pochette', price: 6, count: 5 },
@@ -257,6 +351,7 @@ export function start(seed = createSeed(), character = 'classique') {
 }
 
 function deal(carry) {
+  carry = resolveCasinoTagsOnDeal(carry);
   const blind = blindFor(carry);
   const pile = shuffle(remainingDeck(carry), seededRandom(carry.seed, 'deck', carry.round)).map(card => {
     const augure = carry.enhancements?.[card.id];
@@ -267,7 +362,7 @@ function deal(carry) {
   const target = carry.legacy ? blind.target : Math.min(
     blind.target, reachableScore(hand, pile, plays, carry.owned, carry),
   );
-  return { ...carry, target, phase: 'play', score: 0, plays,
+  return { ...carry, target, phase: 'play', score: 0, plays: plays + (carry.casinoExtraHands ?? 0),
     discards: (blind.discards ?? 3) + (carry.character === 'stratege' ? 2 : 0),
     firstHandPlayed: false,
     consumableBought: false, hand, pile, offers: [], last: null, reward: 0 };
@@ -323,6 +418,11 @@ export function useCards(state, ids, action) {
     if (next.score >= blindFor(state).target) {
       next.goldReward = state.hand.filter(card => card.augure === 'gold' && !ids.includes(card.id)).length * 3;
       next.reward = 4 + next.plays + next.goldReward;
+      if (blindFor(state).kind === 'Boss') {
+        const pending = (state.casinoTags ?? []).filter(tag => tag.kind === 'boss');
+        next.reward += pending.length * 10;
+        next.casinoTags = (state.casinoTags ?? []).filter(tag => tag.kind !== 'boss');
+      }
       next.credits += next.reward;
       const lastLegacyBlind = state.legacy && state.round === legacyBlinds.length - 1;
       const classicWin = !state.legacy && state.round === CLASSIC_ROUNDS - 1;
@@ -411,7 +511,8 @@ export function openPack(state, id) {
 
 export function chooseAugure(state, id) {
   if (state.phase !== 'pack') return state;
-  if (id === null) return { ...state, phase: 'shop', choices: [], pendingAugure: null };
+  if (id === null) return { ...state, phase: state.returnToCasino ? 'casino' : 'shop',
+    choices: [], pendingAugure: null, returnToCasino: false };
   const choice = state.choices.find(card => card.id === id);
   if (!choice) return state;
   if (choice.augure === 'prune') return { ...state, phase: 'prune' };
@@ -429,7 +530,8 @@ export function applyAugure(state, cardId) {
       state.pendingAugure === 'prune' ||
       !remainingDeck(state).some(card => card.id === cardId) ||
       state.enhancements?.[cardId]) return state;
-  return { ...state, phase: 'shop', choices: [], pendingAugure: null,
+  return { ...state, phase: state.returnToCasino ? 'casino' : 'shop',
+    choices: [], pendingAugure: null, returnToCasino: false,
     enhancements: { ...(state.enhancements ?? {}), [cardId]: state.pendingAugure } };
 }
 
@@ -438,7 +540,8 @@ export function pruneDeck(state, ids) {
   if (ids === null) return { ...state, phase: 'pack' };
   if (!ids.length || ids.length > removableCount(state) || new Set(ids).size !== ids.length ||
       ids.some(id => !remainingDeck(state).some(card => card.id === id))) return state;
-  return { ...state, phase: 'shop', choices: [], removed: [...(state.removed ?? []), ...ids] };
+  return { ...state, phase: state.returnToCasino ? 'casino' : 'shop',
+    returnToCasino: false, choices: [], removed: [...(state.removed ?? []), ...ids] };
 }
 
 export const ECLIPSE_PRICE = 5;
@@ -487,5 +590,7 @@ export function advance(state) {
     credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
     consumables: state.consumables ?? [], character: state.character,
     bonusCards: state.bonusCards, polychromeSlots: state.polychromeSlots,
-    enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots });
+    enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots,
+    casinoPath: state.casinoPath, casinoTags: state.casinoTags,
+    freeCasinoPacks: state.freeCasinoPacks });
 }
