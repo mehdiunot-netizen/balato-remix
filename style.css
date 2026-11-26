@@ -1599,3 +1599,69 @@ button.primary {
   .deck-mini-card { min-height: 51px; }
   .deck-dialog form button { min-height: 32px; }
 }
+
+/* v26 — airy play surface: fixed HUD, visible tabletop, no play-area scrolling. */
+@media (orientation: landscape) {
+  #game:has(> .play) > .blind,
+  #game:has(> .play) > .loadout,
+  #game:has(> .play) .joker-collection {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  /* Three normal jokers fit without horizontal panning. Preserve access to
+     larger negative-joker collections rather than cutting their cards off. */
+  #game:has(> .play) .joker-fan:not(:has(> .joker-stack-card:nth-child(4))) {
+    overflow-x: hidden;
+    overflow-y: hidden;
+    touch-action: manipulation;
+    scrollbar-width: none;
+  }
+  #game:has(> .play) > .play {
+    position: relative;
+    align-self: stretch;
+    min-height: 0;
+    height: 100%;
+    padding: 0 4px 0;
+    grid-template-rows: 0 minmax(0, 1fr) auto auto;
+    row-gap: 0;
+    overflow: hidden;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  /* Keep the hand heading available to screen readers but off the tabletop. */
+  #game:has(> .play) .hand-info {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  #game:has(> .play) .cards {
+    grid-row: 2;
+    align-self: end;
+    padding: 0 5px 0;
+  }
+  #game:has(> .play) .preview {
+    grid-row: 3;
+    min-height: 17px;
+    padding: 0 2px;
+    margin: 0;
+    font-size: .72rem;
+    line-height: 1.1;
+  }
+  #game:has(> .play) .actions {
+    grid-row: 4;
+    margin: 0;
+    padding: 0;
+  }
+  #game:has(> .play) .actions > button { min-height: 38px; }
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  #game:has(> .play) > .play { padding-bottom: 0; }
+  #game:has(> .play) .cards { padding-block: 0; }
+  #game:has(> .play) .preview { min-height: 16px; }
+  #game:has(> .play) .actions > button { min-height: 36px; }
+}
