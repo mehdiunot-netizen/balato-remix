@@ -2083,3 +2083,36 @@ button.primary {
   #game:has(> .play) .play .deck-counter { min-height: 50px; }
   #game:has(> .play) .play .deck-back { width: 35px; }
 }
+
+
+/* v31 iPhone compact fitting, leaving all controls visible even with boss text. */
+@media (orientation: landscape) and (max-height: 440px) {
+  #game:has(> .play) .bl-goal { min-height: clamp(57px,18dvh,82px); }
+  #game:has(> .play) .bl-calculation { min-height: clamp(49px,14dvh,66px); }
+  #game:has(> .play) > .blind .score { min-height: 29px; }
+  #game:has(> .play) .side-controls .wallet { min-height: 27px; }
+  #game:has(> .play) .side-controls button { min-height: 26px; }
+  #game:has(> .play) > .blind .character-status,
+  #game:has(> .play) > .blind .boss-rule { max-height: 18px; overflow: hidden; }
+  #game:has(> .play) .play .actions > .hand-action { min-height: 36px; }
+  #game:has(> .play) .play .sort-hand { min-height: 43px; }
+}
+@media (orientation: landscape) {
+  #game:has(> .play) .joker-fan > .joker-stack-card {
+    margin-left: clamp(2px, .55vw, 7px);
+  }
+  #game:has(> .play) .joker-fan:not(:has(> .joker-stack-card:nth-child(4))) {
+    justify-content: center;
+  }
+  #game:has(> .play) .consumable-slots { gap: clamp(3px,.6vw,8px); }
+  #game:has(> .play) .consumable-item,
+  #game:has(> .play) .consumable-empty {
+    min-height: clamp(48px, 17dvh, 115px);
+    border: 3px solid #cfaa6c;
+    border-radius: 5px;
+    background: linear-gradient(145deg,#fff0bc,#d6ac64 52%,#795e45);
+    color: #333e4b;
+    font: 800 clamp(.62rem,1.3vw,.80rem)/1.05 Georgia,serif;
+  }
+  #game:has(> .play) .consumable-item small { color:#44495b; }
+}
