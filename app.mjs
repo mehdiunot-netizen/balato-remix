@@ -211,13 +211,17 @@ function render(focus, scored = false) {
         }).join('')}</div>
         <div class="preview" aria-label="${cards.length} cartes en main">${cards.length}/${blind.size ?? 8}</div>
         <div class="actions" aria-label="Commandes de la main">
-          <button class="primary hand-action" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer <small>${state.plays} mains</small></button>
+          <button class="hand-action discard-action" data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser</button>
+          <div class="sort-hand" aria-label="Trier la main"><span>Trier la main</span>
+            <div><button type="button" data-action="sort-value">Valeur</button>
+            <button type="button" data-action="sort-suit">Couleur</button></div>
+          </div>
+          <button class="primary hand-action play-action" data-action="play" ${selected.size ? '' : 'disabled'}>Jouer la main</button>
           <button type="button" class="deck-counter" data-action="deck-view"
             aria-label="Voir les ${deckFor(state).length} cartes de ton paquet, dont ${state.pile.length} dans la pioche">
-            <strong>♠ Paquet · ${deckFor(state).length}</strong>
-            <small>${state.pile.length} en pioche · Voir les cartes</small>
+            <span class="deck-back" aria-hidden="true">✦</span>
+            <small>${state.pile.length}/${deckFor(state).length}</small>
           </button>
-          <button class="hand-action" data-action="discard" ${selected.size && state.discards ? '' : 'disabled'}>Défausser <small>${state.discards} restantes</small></button>
         </div>
       </section>`;
   } else if (state.phase === 'casino') {
@@ -369,6 +373,12 @@ function render(focus, scored = false) {
     <section class="blind" aria-labelledby="blind-name">
       <span class="eyebrow">${state.legacy ? 'Blinde ' + (state.round + 1) + ' / 6' : state.endless ? 'Infini · Mise ' + blind.ante : 'Mise ' + blind.ante + ' / 8' }</span>
       <h2 id="blind-name" tabindex="-1">${state.phase === 'casino' ? 'Carte des 9 blindes' : blind.name}</h2>
+      ${state.phase === 'play' ? `<div class="bl-goal" aria-label="Objectif de la blinde">
+        <div class="bl-goal-medal">${blind.kind === 'Boss' ? 'BOSS' : blind.kind === 'Petite blinde' ? 'PETITE BLINDE' : 'GROSSE BLINDE'}</div>
+        <div class="bl-goal-text"><span>Faire un score d’au moins</span>
+          <strong>✺ ${scoreFormat.format(blind.target)}</strong>
+          <small>Récompense : 4 cr. + mains restantes</small></div>
+      </div>` : ''}
       ${activeCharacter.id !== 'classique' ? `<p class="character-status" title="${activeCharacter.text}"><span aria-hidden="true">${activeCharacter.mark}</span> ${activeCharacter.name}</p>` : ''}
       ${state.phase !== 'casino' && blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
       ${state.phase !== 'casino' ? `
@@ -699,6 +709,18 @@ game.addEventListener('click', event => {
   if (action === 'rules') {
     document.querySelector('#current-seed').textContent = state.seed;
     rules.showModal();
+    return;
+  }
+
+  if (action === 'sort-value' || action === 'sort-suit') {
+    if (state.phase !== 'play') return;
+    const suits = ['♠', '♥', '♣', '♦'];
+    const ordered = [...state.hand].sort((a, b) => action === 'sort-value'
+      ? b.rank - a.rank || suits.indexOf(a.suit) - suits.indexOf(b.suit)
+      : suits.indexOf(a.suit) - suits.indexOf(b.suit) || b.rank - a.rank);
+    state = { ...state, handOrder: ordered.map(card => card.id) };
+    persist();
+    render();
     return;
   }
 
