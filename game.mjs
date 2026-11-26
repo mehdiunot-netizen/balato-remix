@@ -133,8 +133,9 @@ export function openCasino(state) {
 }
 export function startInCasino(seed = createSeed(), character = 'classique') {
   const initial = start(seed, character);
-  return { ...initial, phase: 'casino', round: -1, target: undefined,
-    selectedBlind: undefined, casinoPath: [], casinoTags: [],
+  const { target, selectedBlind, ...withoutBlind } = initial;
+  return { ...withoutBlind, phase: 'casino', round: -1,
+    casinoPath: [], casinoTags: [],
     casinoSkipSummary: [], freeCasinoPacks: 0 };
 }
 export function chooseCasinoRoom(state, lane) {
@@ -166,8 +167,9 @@ export function skipCasinoRow(state) {
   // Atomic skip: all three tags from the visible blind cards, with no selection.
   for (const option of offers)
     next = addCasinoTag(next, option.reward, option.lane, nextRound);
-  next = { ...next, round: nextRound, phase: 'casino', selectedBlind: undefined,
-    target: undefined, casinoSkipSummary: offers.map(option => option.reward.info),
+  const { target, selectedBlind, ...withoutBlind } = next;
+  next = { ...withoutBlind, round: nextRound, phase: 'casino',
+    casinoSkipSummary: offers.map(option => option.reward.info),
     casinoPath: [...(next.casinoPath ?? []), { round: nextRound, lane: null }] };
   return !next.endless && nextRound >= CLASSIC_ROUNDS - 1
     ? { ...next, phase: 'win' } : next;
@@ -454,6 +456,23 @@ export function useCards(state, ids, action) {
   next.pile = state.pile.slice(cards.length);
   next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(state.pile.slice(0, cards.length));
   return next.hand.length ? next : { ...next, phase: 'lose' };
+}
+
+// Reordering follows each card's negative/polychrome edition and changes
+// the effects of positional joker copies without replacing saved joker IDs.
+export function reorderJoker(state, from, to) {
+  if (!['play', 'shop', 'casino'].includes(state.phase) ||
+      !Number.isInteger(from) || !Number.isInteger(to) ||
+      from < 0 || to < 0 || from >= state.owned.length ||
+      to >= state.owned.length || from === to) return state;
+  const ordered = state.owned.map((id, oldSlot) => ({ id, oldSlot }));
+  const [moved] = ordered.splice(from, 1);
+  ordered.splice(to, 0, moved);
+  const follow = slots => slots?.map(oldSlot =>
+    ordered.findIndex(item => item.oldSlot === oldSlot)).filter(slot => slot >= 0);
+  return { ...state, owned: ordered.map(item => item.id),
+    negativeSlots: follow(state.negativeSlots),
+    polychromeSlots: follow(state.polychromeSlots) };
 }
 
 // A sale can only happen in the shop. Remap negative-slot indices on deletion.

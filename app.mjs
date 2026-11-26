@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=20';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=21';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -88,9 +88,10 @@ function emblem(index, mark) {
 function restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (saved?.version === 1 && saved.state?.hand && blindFor({
-      ...saved.state, legacy: saved.state.legacy ?? !saved.state.seed,
-    })) {
+    if (saved?.version === 1 && Array.isArray(saved.state?.hand) &&
+        ((saved.state.phase === 'casino' && casinoOffers(saved.state).length === 3) || blindFor({
+          ...saved.state, legacy: saved.state.legacy ?? !saved.state.seed,
+        }))) {
       return restoreRun(saved.state);
     }
   } catch {
@@ -121,7 +122,7 @@ function render(focus, scored = false) {
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
-    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
+    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${['shop', 'play', 'casino'].includes(state.phase) ? ' reorderable-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
       <button type="button" class="joker-card-face" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
@@ -332,26 +333,43 @@ function cleanupJokerDrag(pointerId, x, y, cancelled = false) {
   if (!jokerDrag || jokerDrag.pointerId !== pointerId) return;
   const drag = jokerDrag;
   jokerDrag = null;
-  const shouldSell = !cancelled && drag.started && dragOverSellZone(drag.zone, x, y) &&
+  const shouldSell = !cancelled && drag.started && drag.zone &&
+    dragOverSellZone(drag.zone, x, y) &&
     state?.phase === 'shop' && state.owned[drag.slot] === drag.id;
+  const target = !cancelled && drag.started && !shouldSell
+    ? document.elementFromPoint(x, y)?.closest('.reorderable-joker') : null;
+  const destination = target ? Number(target.dataset.jokerSlot) : null;
+  game.querySelector('.joker-reorder-target')?.classList.remove('joker-reorder-target');
   if (drag.card.hasPointerCapture?.(pointerId)) drag.card.releasePointerCapture(pointerId);
   drag.ghost?.remove();
   drag.zone?.remove();
   if (!drag.started) return;
 
-  // Suppress the synthetic click on <summary> that can follow a touch drag.
+  // Suppress the synthetic click following a touch drag.
   suppressDragClick = true;
   window.setTimeout(() => { suppressDragClick = false; }, 0);
-  if (!shouldSell) return;
-  const next = sellJoker(state, drag.slot);
-  if (next === state) return;
-  const earned = next.credits - state.credits;
-  saleNotice = '+' + earned + ' crédits';
-  state = next;
-  selected.clear();
-  persist();
-  render('h3[tabindex="-1"]');
-  announcement.textContent = jokers[drag.id].name + ' vendu pour ' + drag.price + ' crédits.';
+  if (shouldSell) {
+    const next = sellJoker(state, drag.slot);
+    if (next === state) return;
+    const earned = next.credits - state.credits;
+    saleNotice = '+' + earned + ' crédits';
+    state = next;
+    selected.clear();
+    persist();
+    render('h3[tabindex="-1"]');
+    announcement.textContent = jokers[drag.id].name + ' vendu pour ' + earned + ' crédits.';
+    return;
+  }
+  if (destination !== null && Number.isInteger(destination)) {
+    const next = reorderJoker(state, drag.slot, destination);
+    if (next === state) return;
+    state = next;
+    saleNotice = null;
+    selected.clear();
+    persist();
+    render('h3[tabindex="-1"]');
+    announcement.textContent = 'Ordre des jokers modifié.';
+  }
 }
 
 game.addEventListener('click', event => {
@@ -362,10 +380,10 @@ game.addEventListener('click', event => {
 }, true);
 
 game.addEventListener('pointerdown', event => {
-  if (state?.phase !== 'shop' || jokerDrag ||
+  if (!['shop', 'play', 'casino'].includes(state?.phase) || jokerDrag ||
       (event.target.closest('button') && !event.target.closest('.joker-card-face')) ||
       (event.pointerType === 'mouse' && event.button !== 0)) return;
-  const card = event.target.closest('.draggable-joker');
+  const card = event.target.closest('.reorderable-joker');
   if (!card) return;
   const slot = Number(card.dataset.jokerSlot);
   if (!Number.isInteger(slot) || slot < 0 || slot >= state.owned.length) return;
@@ -390,12 +408,14 @@ document.addEventListener('pointermove', event => {
   const { clientX: x, clientY: y } = event;
   if (!drag.started && Math.hypot(x - drag.x, y - drag.y) > 9) {
     drag.started = true;
+    if (state.phase === 'shop') {
     const zone = document.createElement('div');
     zone.className = 'sell-drop-zone';
     zone.setAttribute('aria-hidden', 'true');
     zone.innerHTML = '<strong>VENDRE</strong><small>+' + drag.price + ' crédits · déposer ici</small>';
     document.body.append(zone);
     drag.zone = zone;
+    }
     const ghost = document.createElement('div');
     ghost.className = 'joker-drag-ghost';
     const mark = document.createElement('span');
@@ -409,7 +429,12 @@ document.addEventListener('pointermove', event => {
   event.preventDefault();
   drag.ghost.style.left = x + 'px';
   drag.ghost.style.top = y + 'px';
-  drag.zone.classList.toggle('is-over', dragOverSellZone(drag.zone, x, y));
+  drag.zone?.classList.toggle('is-over', dragOverSellZone(drag.zone, x, y));
+  game.querySelector('.joker-reorder-target')?.classList.remove('joker-reorder-target');
+  if (!drag.zone || !dragOverSellZone(drag.zone, x, y)) {
+    const over = document.elementFromPoint(x, y)?.closest('.reorderable-joker');
+    if (over && over !== drag.card) over.classList.add('joker-reorder-target');
+  }
 }, { passive: false });
 
 document.addEventListener('pointerup', event => {

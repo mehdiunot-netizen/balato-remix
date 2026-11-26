@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -491,4 +491,28 @@ test('les récompenses de Skip sont utilisables mais pas revendables comme conso
   assert.equal(next.phase, 'casino');
   assert.equal(next.consumables.length, 0);
   assert.equal(openCasinoBonusPack(next), next);
+});
+
+test('déplacer un joker change les copies sans perdre les éditions', () => {
+  const plan = jokers.findIndex(j => j.key === 'plan');
+  const base = { ...start('ORDRE-JOKERS'), phase: 'shop',
+    owned: [plan, 1, 0], negativeSlots: [0, 2], polychromeSlots: [1] };
+  const next = reorderJoker(base, 0, 2);
+  assert.deepEqual(next.owned, [1, 0, plan]);
+  assert.deepEqual(next.negativeSlots, [2, 1]);
+  assert.deepEqual(next.polychromeSlots, [0]);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(next))), next);
+  assert.equal(reorderJoker(base, 0, 3), base);
+  assert.equal(reorderJoker(base, 1, 1), base);
+  assert.equal(reorderJoker({ ...base, phase: 'pack' }, 0, 1).owned[0], plan);
+  assert.ok(evaluate([deck[0]], base.owned).mult > evaluate([deck[0]], next.owned).mult);
+});
+test('sauvegarde d’une nouvelle partie en casino et d’un Skip triple', () => {
+  const first = startInCasino('REPRISE-CASINO');
+  assert.equal(first.phase, 'casino');
+  assert.equal(casinoOffers(first).length, 3);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(first))), first);
+  const skipped = skipCasinoRow(first);
+  assert.equal(skipped.casinoSkipSummary.length, 3);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(skipped))), skipped);
 });

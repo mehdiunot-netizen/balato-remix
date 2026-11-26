@@ -1245,6 +1245,14 @@ button.primary {
   .casino-token { font-size: .59rem; }
 }
 
+/* v21 — change joker order by touch/mouse while preserving sell gesture. */
+.reorderable-joker, .reorderable-joker * { touch-action: none; }
+.joker-fan .joker-reorder-target { z-index: 110 !important; }
+.joker-fan .joker-reorder-target .joker-card-face {
+  outline: 3px solid #ffda8a; outline-offset: -3px;
+  box-shadow: 0 0 15px #f2cd8ba9;
+}
+
 /* Place the blind selector into the same stage as the cards and shop. */
 @media (orientation: landscape) {
   #game > .casino-board { grid-column: 2; grid-row: 2; align-self: stretch; }
