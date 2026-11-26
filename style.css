@@ -2298,3 +2298,67 @@ button.primary {
   background-position: center;
   image-rendering: auto;
 }
+
+
+/* v38 — illustrated 50×75 pixel Joker cards, including the shop and packs.
+   Artwork is rendered as an original SVG, not as a symbol or Balatro sprite. */
+.joker-illustration.joker-made-card {
+  display: block;
+  position: relative;
+  border: 0;
+  border-radius: 3px;
+  padding: 0;
+  background: none;
+  box-shadow: 0 2px 4px #060b15a8;
+  overflow: hidden;
+  isolation: isolate;
+  image-rendering: pixelated;
+}
+.joker-illustration.joker-made-card::before,
+.joker-illustration.joker-made-card::after {
+  content: none;
+  display: none;
+}
+.joker-made-card .joker-pixel-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 50 / 75;
+  object-fit: fill;
+  image-rendering: pixelated;
+}
+.joker-card-face.illustrated-joker .joker-made-card {
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+}
+.joker-card-face.illustrated-joker .joker-card-top { display: none; }
+.joker-card-face.illustrated-joker .joker-card-name {
+  display: block;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  padding: 0 1px;
+  font-size: clamp(.40rem, 1vw, .55rem);
+  line-height: 1.05;
+}
+.shop .joker-made-card {
+  display: block;
+  width: clamp(32px, 5.1vw, 51px);
+  height: clamp(48px, 7.65vw, 76px);
+  flex: 0 0 auto;
+}
+.shop .joker-pack-options .joker-made-card {
+  width: clamp(40px, 6vw, 57px);
+  height: clamp(60px, 9vw, 85px);
+  margin-inline: auto;
+}
+.joker-stack-card.polychrome-joker .joker-made-card,
+.joker-stack-card.negative-joker .joker-made-card {
+  background: none;
+  filter: none;
+}
+.joker-stack-card.polychrome-joker .joker-made-card { box-shadow: 0 0 7px #fce9af; }
+.joker-stack-card.negative-joker .joker-made-card { box-shadow: 0 0 7px #a691e5; }
