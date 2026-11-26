@@ -1665,3 +1665,29 @@ button.primary {
   #game:has(> .play) .preview { min-height: 16px; }
   #game:has(> .play) .actions > button { min-height: 36px; }
 }
+
+
+/* v27 — keep the joker fan within the iPhone landscape HUD without swiping. */
+@media (orientation: landscape) {
+  /* The HUD is capped at 25dvh; its former fixed 86px fan could be clipped
+     below ~420px of viewport height, especially by Safari safe-area insets. */
+  #game:has(> .play) .joker-collection .joker-fan {
+    height: min(72px, 18dvh);
+    max-height: max(0px, calc(25dvh - 26px));
+    padding-block: 1px;
+    margin-block: 1px 0;
+  }
+  #game:has(> .play) .joker-fan > .joker-stack-card {
+    height: 100%;
+  }
+  #game:has(> .play) .joker-card-face .joker-illustration {
+    min-height: 0;
+    flex-shrink: 1;
+  }
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  #game:has(> .play) .joker-collection .joker-fan {
+    height: min(58px, 18dvh);
+    max-height: max(0px, calc(25dvh - 25px));
+  }
+}
