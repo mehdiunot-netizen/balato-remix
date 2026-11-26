@@ -439,6 +439,7 @@ export function useCards(state, ids, action) {
   const cards = state.hand.filter(c => ids.includes(c.id));
   if (cards.length !== ids.length) return state;
   const next = { ...state, [counter]: state[counter] - 1 };
+  let dnaCopy = null;
   if (action === 'play') {
     // ADN creates one permanent card AND draws that same copy into the
     // current hand; it replaces the ordinary refill, not an extra deck draw.
@@ -449,7 +450,7 @@ export function useCards(state, ids, action) {
       const id = 'adn-' + state.round + '-' + existing.length;
       const copy = { ...source, id };
       next.bonusCards = [...existing, copy];
-      next.adnDrawnCard = copy;
+      dnaCopy = copy;
     }
     next.firstHandPlayed = true;
     next.last = previewHand(state, cards, true);
@@ -471,23 +472,15 @@ export function useCards(state, ids, action) {
           .filter(i => !state.owned.includes(i) && !jokers[i].legendary && !jokers[i].prototype);
         next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
       }
-      if (next.adnDrawnCard) {
-        next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(next.adnDrawnCard);
-        delete next.adnDrawnCard;
-      }
+      if (dnaCopy) next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(dnaCopy);
       return next;
     }
-    if (!next.plays) {
-      delete next.adnDrawnCard;
-      return { ...next, phase: 'lose' };
-    }
+    if (!next.plays) return { ...next, phase: 'lose' };
   }
-  const copy = next.adnDrawnCard;
-  delete next.adnDrawnCard;
-  const drawCount = Math.max(0, cards.length - (copy ? 1 : 0));
+  const drawCount = Math.max(0, cards.length - (dnaCopy ? 1 : 0));
   next.pile = state.pile.slice(drawCount);
   next.hand = state.hand.filter(c => !ids.includes(c.id))
-    .concat(copy ? [copy] : [], state.pile.slice(0, drawCount));
+    .concat(dnaCopy ? [dnaCopy] : [], state.pile.slice(0, drawCount));
   return next.hand.length ? next : { ...next, phase: 'lose' };
 }
 
