@@ -143,7 +143,7 @@ function render(focus, scored = false) {
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
-    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${state.owned.length > 1 ? ' reorderable-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
+    return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''} reorderable-joker${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
       <button type="button" class="joker-card-face" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
