@@ -1,5 +1,7 @@
 # Contre-Pli
 
+> **Développement actif :** [`codex/contre-pli-ios`](https://github.com/mehdiunot-netizen/balato-remix/tree/codex/contre-pli-ios). La branche `main` est en retard et la PR #1 est encore en brouillon. Avant toute modification, consulter [AGENTS.md](AGENTS.md) et [docs/BRANCHES.md](docs/BRANCHES.md). Le contenu ci-dessous décrit en partie l'ancienne version du prototype ; pour l'état récent, se référer au code sur la branche active.
+
 Un jeu de cartes solo en français, conçu pour une partie rapide sur iPhone en mode paysage. Les cartes, l’emblème, les jokers et le barème ont été créés pour ce projet.
 
 ## Jouer
