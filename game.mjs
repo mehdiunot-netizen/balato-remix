@@ -368,7 +368,7 @@ export function start(seed = createSeed(), character = 'classique') {
   const chosen = characters.some(c => c.id === character) ? character : 'classique';
   const state = { seed, character: chosen, round: 0,
     credits: chosen === 'riche' ? 13 : 3,
-    owned: [], consumables: [], catalogSize: jokers.length };
+    owned: [], handHistory: [], consumables: [], catalogSize: jokers.length };
   const random = seededRandom(seed, 'character-start', 0);
   if (chosen === 'chanceux') {
     const card = deck[Math.floor(random() * deck.length)];
@@ -459,6 +459,12 @@ export function useCards(state, ids, action) {
     }
     next.firstHandPlayed = true;
     next.last = previewHand(state, cards, true);
+    // Persist every played combination, not discards, across blinds and resumes.
+    next.handHistory = [...(state.handHistory ?? []), {
+      round: state.round, name: next.last.name,
+      cards: cards.map(card => ({ rank: card.rank, suit: card.suit })),
+      chips: next.last.chips, mult: next.last.mult, total: next.last.total,
+    }];
     next.score += next.last.total;
     if (next.score >= blindFor(state).target) {
       next.goldReward = state.hand.filter(card => card.augure === 'gold' && !ids.includes(card.id)).length * 3;
@@ -699,6 +705,7 @@ export function advance(state) {
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
     credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
     consumables: state.consumables ?? [], character: state.character,
+    handHistory: state.handHistory ?? [],
     bonusCards: state.bonusCards, polychromeSlots: state.polychromeSlots,
     enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots,
     casinoPath: state.casinoPath, casinoTags: state.casinoTags,
