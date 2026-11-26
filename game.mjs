@@ -26,7 +26,7 @@ export const characters = [
   { id: 'classique', name: 'Sans personnage', mark: '♠', text: 'Règles classiques, sans bonus.' },
   { id: 'riche', name: 'Le Riche', mark: '¤', text: '+10 crédits au début de la partie.' },
   { id: 'chanceux', name: 'Le Chanceux', mark: '✦', text: 'Une carte de ton paquet reçoit un Augure aléatoire, fixé par la seed.' },
-  { id: 'as-copieur', name: 'L’As Copieur', mark: '⌘', text: 'Commence avec ADN : la première main de chaque blinde copie dans le paquet la carte jouée seule.' },
+  { id: 'as-copieur', name: 'L’As Copieur', mark: '⌘', text: 'Commence avec ADN : la première main de chaque blinde copie la carte jouée seule dans le paquet et dans ta main.' },
   { id: 'negatif', name: 'Le Négatif', mark: '◐', text: 'Tous les jokers achetés sont négatifs : ils ne prennent pas de place.' },
   { id: 'multiplieur', name: 'Le Multiplieur', mark: '✺', text: 'Commence avec un joker polychrome aléatoire qui donne ×1,5 au multiplicateur final.' },
   { id: 'marchand', name: 'Le Marchand', mark: '◇', text: '−20 % sur les achats en boutique, arrondis au crédit inférieur.' },
@@ -440,12 +440,16 @@ export function useCards(state, ids, action) {
   if (cards.length !== ids.length) return state;
   const next = { ...state, [counter]: state[counter] - 1 };
   if (action === 'play') {
+    // ADN creates one permanent card AND draws that same copy into the
+    // current hand; it replaces the ordinary refill, not an extra deck draw.
     if (!state.firstHandPlayed && cards.length === 1 &&
         state.owned.some(id => jokers[id]?.key === 'adn')) {
       const existing = state.bonusCards ?? [];
       const source = cards[0];
       const id = 'adn-' + state.round + '-' + existing.length;
-      next.bonusCards = [...existing, { ...source, id }];
+      const copy = { ...source, id };
+      next.bonusCards = [...existing, copy];
+      next.adnDrawnCard = copy;
     }
     next.firstHandPlayed = true;
     next.last = previewHand(state, cards, true);
@@ -467,12 +471,23 @@ export function useCards(state, ids, action) {
           .filter(i => !state.owned.includes(i) && !jokers[i].legendary && !jokers[i].prototype);
         next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
       }
+      if (next.adnDrawnCard) {
+        next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(next.adnDrawnCard);
+        delete next.adnDrawnCard;
+      }
       return next;
     }
-    if (!next.plays) return { ...next, phase: 'lose' };
+    if (!next.plays) {
+      delete next.adnDrawnCard;
+      return { ...next, phase: 'lose' };
+    }
   }
-  next.pile = state.pile.slice(cards.length);
-  next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(state.pile.slice(0, cards.length));
+  const copy = next.adnDrawnCard;
+  delete next.adnDrawnCard;
+  const drawCount = Math.max(0, cards.length - (copy ? 1 : 0));
+  next.pile = state.pile.slice(drawCount);
+  next.hand = state.hand.filter(c => !ids.includes(c.id))
+    .concat(copy ? [copy] : [], state.pile.slice(0, drawCount));
   return next.hand.length ? next : { ...next, phase: 'lose' };
 }
 
