@@ -85,6 +85,27 @@ function emblem(index, mark) {
   return '<span class="card-emblem emblem-' + index + '" aria-hidden="true"><span>' + mark + '</span></span>';
 }
 
+
+// Original miniature joker portraits: each ID keeps a stable palette and motif.
+// CSS-based art stays crisp and light on iPhone.
+function jokerPortrait(id, mark) {
+  const palettes = [
+    ['#fae3a0', '#98694f', '#24374b'], ['#f4ca93', '#a54a65', '#332b53'],
+    ['#aee3db', '#277c87', '#1e304e'], ['#fee0aa', '#9162a0', '#28394f'],
+    ['#f2aca0', '#a04445', '#422c49'], ['#c2d9aa', '#55815a', '#273e49'],
+    ['#eecb88', '#a16f2b', '#34435d'], ['#b8c3f0', '#5e66ac', '#24365a'],
+    ['#f7c6d6', '#a34c83', '#344052'], ['#bfe8e8', '#387b76', '#28364c'],
+    ['#f4d0a3', '#9c584e', '#394153'], ['#d2c0ee', '#7461a4', '#2b324a'],
+  ];
+  const [light, mid, dark] = palettes[id % palettes.length];
+  return `<span class="joker-illustration motif-${id % 6}" aria-hidden="true"
+    style="--j-light:${light};--j-mid:${mid};--j-dark:${dark}">
+    <span class="joker-art-orbit"></span>
+    <span class="joker-art-symbol">${mark}</span>
+    <span class="joker-art-spark">✦</span>
+  </span>`;
+}
+
 function restore() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -147,7 +168,7 @@ function render(focus, scored = false) {
       <button type="button" class="joker-card-face" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
-        ${emblem(id, mark)}
+        ${jokerPortrait(id, mark)}
         <span class="joker-card-name">${name}</span>
         ${negative ? '<span class="joker-card-edition" aria-hidden="true">NÉG.</span>' : ''}
         ${polychrome ? '<span class="joker-card-edition rainbow" aria-hidden="true">POLY.</span>' : ''}
@@ -298,7 +319,7 @@ function render(focus, scored = false) {
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
           const full = state.character !== 'negatif' && jokerSlotsUsed(state) >= 3;
-          return `<li>${emblem(id, joker.mark)}
+          return `<li>${jokerPortrait(id, joker.mark)}
           <div><strong>${joker.name}</strong><small>${joker.text}</small></div>
           <button data-buy="${id}" aria-label="Acheter ${joker.name} pour ${joker.price} crédits"
           ${full || state.credits < shopPrice(state, joker.price) ? 'disabled' : ''}>${shopPrice(state, joker.price)} cr.</button></li>`;
