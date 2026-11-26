@@ -51,3 +51,8 @@ Row-major tile mappings:
 The UI chooses the image sheet by stable joker numeric ID, preserving the
 original v1 portraits. Remaining jokers retain their symbolic fallback.
 The gameplay engine, nine blinds, saves and consumable touch behavior are untouched.
+
+## Dedicated Chambre d’écho artwork
+- New original compact portrait: `art/chambre-echo.webp` (56×72 WebP), distinct from the tiny first cell of the v2 sprite sheet.
+- `app.mjs` selects this dedicated image only for stable joker ID **13**, in equipped jokers, the shop and joker packs.
+- `style.css` uses `.joker-chambre-echo` to show the complete portrait, also in polychrome edition. All other portrait mappings remain unchanged.

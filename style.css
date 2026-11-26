@@ -2285,3 +2285,16 @@ button.primary {
   .consumable-detail { padding: 7px 9px; }
   #consumable-dialog-art .consumable-card-picture { width: 55px; height: 62px; }
 }
+
+
+/* v38 — dedicated, readable original art for Chambre d’écho (joker ID 13).
+   Preserve every other joker's sprite-sheet position and touch behaviour. */
+.joker-illustration.joker-portrait-pixel.joker-chambre-echo,
+.joker-stack-card.polychrome-joker .joker-illustration.joker-portrait-pixel.joker-chambre-echo {
+  background-color: #151b3a;
+  background-image: url("./art/chambre-echo.webp");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: auto;
+}

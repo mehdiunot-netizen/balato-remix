@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=27';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=28';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -106,6 +106,8 @@ const illustratedJokersSecond = new Map([
 // Older jokers without a finished portrait keep the accessible symbolic fallback: each ID keeps a stable palette and motif.
 // CSS-based art stays crisp and light on iPhone.
 function jokerPortrait(id, mark) {
+  // A dedicated original portrait replaces the miniature sprite for this joker.
+  if (id === 13) return '<span class="joker-illustration joker-portrait-pixel joker-chambre-echo" aria-hidden="true"></span>';
   const secondSheetTile = illustratedJokersSecond.get(id);
   const tile = illustratedJokers.get(id) ?? secondSheetTile;
   if (tile !== undefined) {
