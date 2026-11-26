@@ -234,7 +234,7 @@ export const jokerPacks = [
 // Two reusable inventory slots; purchase offers follow the same seed as the run.
 export const consumables = [
   { id: 'bourse', name: 'Bourse', mark: '¤', text: 'Gagne 5 crédits.', price: 4 },
-  { id: 'relance', name: 'Relance', mark: '↺', text: '+1 défausse pour cette blinde.', price: 4 },
+  { id: 'relance', name: 'Défausse bonus', mark: '↺', text: '+1 défausse pour cette blinde (ancienne sauvegarde).', price: 4 },
   { id: 'souffle', name: 'Souffle', mark: '✷', text: '+1 main pour cette blinde.', price: 5 },
 ];
 export const CONSUMABLE_SLOTS = 2;
@@ -243,7 +243,8 @@ export const consumableSlotsFor = state => CONSUMABLE_SLOTS + (state?.character 
 export function consumableOffer(state) {
   if (state.phase !== 'shop' || state.consumableBought) return undefined;
   const random = seededRandom(state.seed, 'consumable-offer', state.round);
-  return consumables[Math.floor(random() * consumables.length)];
+  const available = consumables.filter(item => item.id !== 'relance');
+  return available[Math.floor(random() * available.length)];
 }
 
 export function buyConsumable(state, id) {
@@ -478,6 +479,7 @@ export function useCards(state, ids, action) {
       const lastLegacyBlind = state.legacy && state.round === legacyBlinds.length - 1;
       const classicWin = !state.legacy && state.round === CLASSIC_ROUNDS - 1;
       next.phase = lastLegacyBlind || classicWin ? 'win' : 'shop';
+      next.rerolls = 0;
       if (!lastLegacyBlind) {
         const available = jokers.slice(0, state.catalogSize ?? 7).map((_, i) => i)
           .filter(i => !state.owned.includes(i) && !jokers[i].legendary && !jokers[i].prototype);
@@ -536,6 +538,28 @@ export function buy(state, id) {
       ? [...(state.negativeSlots ?? []), state.owned.length]
       : state.negativeSlots,
     offers: state.offers.filter(offer => offer !== id) };
+}
+
+// Shop rerolls are buttons, not inventory consumables. Their cost increases
+// within a shop and resets after a blind; the seed reproduces every reroll.
+export function rerollPrice(state) {
+  return 5 + (state.rerolls ?? 0);
+}
+
+export function rerollShop(state) {
+  if (state.phase !== 'shop' || state.credits < rerollPrice(state)) return state;
+  const available = jokers.slice(0, state.catalogSize ?? 7).map((joker, id) => ({ joker, id }))
+    .filter(({ joker, id }) => !state.owned.includes(id) && !joker.legendary && !joker.prototype)
+    .map(({ id }) => id);
+  if (!available.length) return state;
+  const oldOffers = state.offers ?? [];
+  const nextRoll = state.rerolls ?? 0;
+  const random = seededRandom(state.seed, 'shop-reroll', state.round * 100000 + nextRoll);
+  // Prefer unfamiliar offers; refill from previous cards only if necessary.
+  const fresh = shuffle(available.filter(id => !oldOffers.includes(id)), random);
+  const repeats = shuffle(available.filter(id => oldOffers.includes(id)), random);
+  return { ...state, credits: state.credits - rerollPrice(state),
+    offers: [...fresh, ...repeats].slice(0, 3), rerolls: nextRoll + 1 };
 }
 
 function remainingDeck(state) {
