@@ -1493,3 +1493,109 @@ button.primary {
   .joker-art-symbol { font-size: 1.35rem; }
   .shop .joker-illustration { width: 37px; height: 43px; min-height: 43px; }
 }
+
+/* v25 — compact touch actions with a central inspectable deck. */
+@media (orientation: landscape) {
+  .play {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    align-content: stretch;
+    padding-bottom: max(2px, env(safe-area-inset-bottom));
+    row-gap: 1px;
+  }
+  .play .hand-info { padding-bottom: 0; }
+  .play .cards {
+    align-self: end;
+    padding: 2px 6px 5px;
+  }
+  .play .preview {
+    min-height: 22px;
+    padding: 0 4px;
+    font-size: .75rem;
+    line-height: 1.12;
+    gap: 2px 6px;
+  }
+  .play .actions {
+    display: grid;
+    grid-template-columns: minmax(84px, .85fr) minmax(125px, 1.25fr) minmax(86px, .85fr);
+    align-items: stretch;
+    gap: clamp(3px, .7vw, 8px);
+  }
+  .play .actions > button {
+    width: 100%;
+    min-height: 39px;
+    padding: 3px 4px;
+    border-radius: 6px;
+    font: 800 clamp(.72rem, 1.65vw, .87rem)/1.03 system-ui, sans-serif;
+  }
+  .play .actions small {
+    font-size: clamp(.58rem, 1.3vw, .70rem);
+    line-height: 1.08;
+    margin-top: 2px;
+  }
+  .play .deck-counter {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    background: linear-gradient(165deg, #264f59, #142e41);
+    border: 1px solid #cdb788;
+    color: #ffe3ad;
+    box-shadow: inset 0 1px #f6e1a644, 0 2px 4px #071521;
+  }
+  .play .deck-counter strong { font-size: .81rem; white-space: nowrap; }
+  .play .deck-counter small { color: #d8e8e3; font-weight: 600; }
+}
+.deck-dialog {
+  width: min(740px, calc(100vw - 24px));
+  max-height: calc(100dvh - 18px);
+  padding: 12px 14px;
+  overflow: hidden;
+  color: #ffedcb;
+}
+.deck-dialog h2 { margin: 0 0 4px; font-size: 1.06rem; }
+.deck-dialog #deck-summary { margin: 0; font-size: .73rem; line-height: 1.2; color: #f4dcad; }
+.deck-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 5px;
+  max-height: min(54dvh, 320px);
+  margin: 8px 0;
+  padding: 3px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  list-style: none;
+}
+.deck-mini-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  min-height: 57px;
+  padding: 4px;
+  border: 1px solid #bda178;
+  border-radius: 5px;
+  background: linear-gradient(140deg,#fff5dc,#e4d2a8);
+  color: #243b46;
+  box-shadow: inset 0 0 0 1px #fff9ee, 0 2px 3px #07131b9c;
+  text-align: left;
+}
+.deck-mini-card.red { color: #963e4a; }
+.deck-mini-card strong { font: 900 .95rem/1 Georgia, serif; }
+.deck-mini-card small { color: #54656b; font: 650 .52rem/1.12 system-ui, sans-serif; }
+.deck-mini-card .deck-mini-augure {
+  display: block;
+  color: #5d4779;
+  font: 750 .50rem/1.05 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.deck-dialog form button { width: 100%; min-height: 38px; padding: 5px; }
+@media (orientation: landscape) and (max-height: 360px) {
+  .play .cards { padding-bottom: 3px; }
+  .play .actions > button { min-height: 35px; }
+  .play .preview { min-height: 19px; font-size: .69rem; }
+  .deck-dialog { padding: 7px 10px; }
+  .deck-card-grid { max-height: 47dvh; }
+  .deck-mini-card { min-height: 51px; }
+  .deck-dialog form button { min-height: 32px; }
+}
