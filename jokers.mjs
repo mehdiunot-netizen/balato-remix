@@ -41,7 +41,7 @@ export const jokers = [
 // Additional original starting and legendary jokers; keep prior indices stable.
 jokers.push(
   { key: 'adn', name: 'ADN', mark: '⌘', price: 8,
-    text: 'Si la première main de la blinde ne joue qu’une seule carte, ajoute une copie permanente de cette carte au paquet.',
+    text: 'Si la première main de la blinde ne joue qu’une seule carte, ajoute une copie permanente au paquet et la place immédiatement dans ta main.',
     bonus: () => [0, 0, 1] },
   { key: 'plan', name: 'Plan', mark: '▤', price: 9, copyNext: true,
     text: 'Copie le bonus du joker placé immédiatement à sa droite.',
