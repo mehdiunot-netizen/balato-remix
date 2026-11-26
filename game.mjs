@@ -479,8 +479,7 @@ export function useCards(state, ids, action) {
 // Reordering follows each card's negative/polychrome edition and changes
 // the effects of positional joker copies without replacing saved joker IDs.
 export function reorderJoker(state, from, to) {
-  if (!['play', 'shop', 'casino'].includes(state.phase) ||
-      !Number.isInteger(from) || !Number.isInteger(to) ||
+  if (!Number.isInteger(from) || !Number.isInteger(to) ||
       from < 0 || to < 0 || from >= state.owned.length ||
       to >= state.owned.length || from === to) return state;
   const ordered = state.owned.map((id, oldSlot) => ({ id, oldSlot }));
