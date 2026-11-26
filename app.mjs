@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=28';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=29';
 import { jokerArtwork } from './joker-art.mjs?v=2';
 
 const game = document.querySelector('#game');
@@ -170,7 +170,7 @@ function render(focus, scored = false) {
     const polychrome = state.polychromeSlots?.includes(index);
     return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''} reorderable-joker${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
       <button type="button" class="joker-card-face illustrated-joker" data-joker-info="${index}"
-        aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
+        aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails ou faire glisser pour vendre">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
         ${jokerPortrait(id, mark)}
         <span class="joker-card-name">${name}</span>
@@ -421,7 +421,7 @@ function render(focus, scored = false) {
 }
 
 
-/* Drag-to-sell on touch and mouse: never sell unless released in the box. */
+/* The temporary zone only sells on release inside its bounds. */
 let jokerDrag = null;
 let cardDrag = null;
 let consumableDrag = null;
@@ -438,7 +438,7 @@ function cleanupJokerDrag(pointerId, x, y, cancelled = false) {
   jokerDrag = null;
   const shouldSell = !cancelled && drag.started && drag.zone &&
     dragOverSellZone(drag.zone, x, y) &&
-    state?.phase === 'shop' && state.owned[drag.slot] === drag.id;
+    state?.owned[drag.slot] === drag.id;
   const target = !cancelled && drag.started && !shouldSell
     ? document.elementFromPoint(x, y)?.closest('.reorderable-joker') : null;
   const destination = target ? Number(target.dataset.jokerSlot) : null;
@@ -460,7 +460,7 @@ function cleanupJokerDrag(pointerId, x, y, cancelled = false) {
     state = next;
     selected.clear();
     persist();
-    render('h3[tabindex="-1"]');
+    render(state.phase === 'play' ? '#blind-name' : 'h3[tabindex="-1"]');
     announcement.textContent = jokers[drag.id].name + ' vendu pour ' + earned + ' crédits.';
     return;
   }
@@ -582,14 +582,12 @@ document.addEventListener('pointermove', event => {
   const { clientX: x, clientY: y } = event;
   if (!drag.started && Math.hypot(x - drag.x, y - drag.y) > 9) {
     drag.started = true;
-    if (state.phase === 'shop') {
     const zone = document.createElement('div');
     zone.className = 'sell-drop-zone';
     zone.setAttribute('aria-hidden', 'true');
     zone.innerHTML = '<strong>VENDRE</strong><small>+' + drag.price + ' crédits · déposer ici</small>';
     document.body.append(zone);
     drag.zone = zone;
-    }
     const ghost = drag.card.querySelector('.joker-card-face').cloneNode(true);
     const rect = drag.card.getBoundingClientRect();
     ghost.removeAttribute('data-joker-info');
@@ -713,7 +711,7 @@ game.addEventListener('click', event => {
     document.querySelector('#joker-dialog-editions').textContent = editions.join(' · ');
     jokerDialogSell.dataset.sellSlot = String(slot);
     jokerDialogSell.textContent = 'Vendre · +' + Math.max(1, Math.floor(joker.price / 2)) + ' crédits';
-    jokerDialogSell.hidden = state.phase !== 'shop';
+    jokerDialogSell.hidden = false;
     jokerDialog.showModal();
     return;
   }
@@ -907,7 +905,7 @@ jokerDialogSell.addEventListener('click', () => {
   selected.clear();
   persist();
   jokerDialog.close();
-  render('h3[tabindex="-1"]');
+  render(state.phase === 'play' ? '#blind-name' : 'h3[tabindex="-1"]');
   announcement.textContent = 'Joker vendu pour ' + earned + ' crédits.';
 });
 

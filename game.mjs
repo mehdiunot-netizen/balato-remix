@@ -591,16 +591,16 @@ export function reorderJoker(state, from, to) {
     polychromeSlots: follow(state.polychromeSlots) };
 }
 
-// A sale can only happen in the shop. Remap negative-slot indices on deletion.
+// Keep editions and any open Eclipse pointed at the same cards after a sale.
 export function sellJoker(state, slot) {
-  if (state.phase !== 'shop' || !Number.isInteger(slot) ||
-      slot < 0 || slot >= state.owned.length) return state;
-  const id = state.owned[slot];
-  const value = Math.max(1, Math.floor(jokers[id].price / 2));
-  const remap = indexes => (indexes ?? [])
-    .filter(index => index !== slot)
-    .map(index => index > slot ? index - 1 : index);
-  return { ...state, credits: state.credits + value,
+  if (!Number.isInteger(slot) || slot < 0 || slot >= state.owned.length) return state;
+  const joker = jokers[state.owned[slot]];
+  if (!joker) return state;
+  const value = Math.max(1, Math.floor(joker.price / 2));
+  const follow = index => index == null || index === slot ? null : index > slot ? index - 1 : index;
+  const remap = indexes => (indexes ?? []).map(follow).filter(index => index !== null);
+  const eclipse = state.eclipse ? { negative: follow(state.eclipse.negative), copy: follow(state.eclipse.copy) } : state.eclipse;
+  return { ...state, ...(state.eclipse ? { eclipse } : {}), credits: state.credits + value,
     owned: state.owned.filter((_, index) => index !== slot),
     negativeSlots: remap(state.negativeSlots),
     polychromeSlots: remap(state.polychromeSlots) };

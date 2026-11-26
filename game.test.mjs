@@ -297,8 +297,6 @@ test('vente en boutique, slots négatifs, copie et sauvegardes', () => {
   assert.equal(sellJoker(shop,-1),shop);
   assert.equal(sellJoker(shop,3),shop);
   assert.equal(sellJoker(shop,1.5),shop);
-  const playing={...shop,phase:'play'};
-  assert.equal(sellJoker(playing,0),playing);
   assert.deepEqual(sellJoker({...shop,owned:[0,0],negativeSlots:[0]},0).negativeSlots,[]);
 });
 
@@ -721,4 +719,20 @@ test('relancer une boutique conserve sa seed et évite les mêmes jokers', () =>
   assert.ok(rerolled.offers.every(id => !wealthy.offers.includes(id)));
   assert.deepEqual(rerollShop(wealthy), rerolled);
   assert.equal(rerolled.credits, 100 - rerollPrice(wealthy));
+});
+
+test('la vente fonctionne en cours de blinde et réindexe une Éclipse ouverte', () => {
+  const playing = { ...start('vente-libre'), owned: [0, 1, 2], credits: 0,
+    negativeSlots: [1], polychromeSlots: [2] };
+  const sold = sellJoker(playing, 0);
+  assert.equal(sold.phase, 'play');
+  assert.equal(sold.credits, 2);
+  assert.equal(sold.target, playing.target);
+  assert.deepEqual(sold.owned, [1, 2]);
+  assert.deepEqual(sold.negativeSlots, [0]);
+  assert.deepEqual(sold.polychromeSlots, [1]);
+  const eclipse = sellJoker({ ...playing, phase: 'eclipse', eclipse: { negative: 2, copy: 0 } }, 0);
+  assert.deepEqual(eclipse.eclipse, { negative: 1, copy: null });
+  assert.equal(chooseEclipse(eclipse, 'copy'), eclipse);
+  assert.deepEqual(chooseEclipse(eclipse, 'negative').negativeSlots, [0, 1]);
 });
