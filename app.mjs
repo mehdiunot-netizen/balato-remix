@@ -334,6 +334,7 @@ function render(focus, scored = false) {
       <section class="shop">
         <header class="shop-header ${scored ? 'blind-cleared' : ''}">
           <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits${state.goldReward ? ' (dont ' + state.goldReward + ' Ducat)' : ''}</p></div>
+          <div class="sell-drop-zone"><strong>Vendre</strong><small>Glisse un joker ici</small></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
         ${pack || jokerPack || eclipse || consumable ? `<div class="pack-shelf" aria-label="Pochettes et consommables">
@@ -446,7 +447,10 @@ function cleanupJokerDrag(pointerId, x, y, cancelled = false) {
   if (drag.card.hasPointerCapture?.(pointerId)) drag.card.releasePointerCapture(pointerId);
   drag.ghost?.remove();
   drag.card.classList.remove('drag-source');
-  drag.zone?.remove();
+  if (drag.zone) {
+    drag.zone.classList.remove('is-over');
+    drag.zone.querySelector('small').textContent = 'Glisse un joker ici';
+  }
   if (!drag.started) return;
 
   // Suppress the synthetic click following a touch drag.
@@ -583,12 +587,8 @@ document.addEventListener('pointermove', event => {
   if (!drag.started && Math.hypot(x - drag.x, y - drag.y) > 9) {
     drag.started = true;
     if (state.phase === 'shop') {
-    const zone = document.createElement('div');
-    zone.className = 'sell-drop-zone';
-    zone.setAttribute('aria-hidden', 'true');
-    zone.innerHTML = '<strong>VENDRE</strong><small>+' + drag.price + ' crédits · déposer ici</small>';
-    document.body.append(zone);
-    drag.zone = zone;
+      drag.zone = game.querySelector('.sell-drop-zone');
+      if (drag.zone) drag.zone.querySelector('small').textContent = '+' + drag.price + ' crédits';
     }
     const ghost = drag.card.querySelector('.joker-card-face').cloneNode(true);
     const rect = drag.card.getBoundingClientRect();
