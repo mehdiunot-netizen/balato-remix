@@ -96,15 +96,25 @@ const illustratedJokers = new Map([
   [8, 10], [9, 11], [10, 12], [11, 13], [12, 14],
 ]);
 
+// A second original 5×3 sheet. Keep previous numeric IDs unchanged for saved games.
+const illustratedJokersSecond = new Map([
+  [13, 0], [16, 1], [17, 2], [18, 3], [19, 4],
+  [20, 5], [21, 6], [22, 7], [23, 8], [24, 9],
+  [25, 10], [26, 11], [27, 12], [28, 13], [29, 14],
+]);
+
 // Older jokers without a finished portrait keep the accessible symbolic fallback: each ID keeps a stable palette and motif.
 // CSS-based art stays crisp and light on iPhone.
 function jokerPortrait(id, mark) {
-  const tile = illustratedJokers.get(id);
+  const secondSheetTile = illustratedJokersSecond.get(id);
+  const tile = illustratedJokers.get(id) ?? secondSheetTile;
   if (tile !== undefined) {
     const column = tile % 5;
     const row = Math.floor(tile / 5);
+    const sheet = secondSheetTile === undefined ? '' :
+      '--portrait-sheet:url("./art/joker-originals-v2.webp");';
     return `<span class="joker-illustration joker-portrait-pixel" aria-hidden="true"
-      style="--sprite-x:${column * 25}%;--sprite-y:${row * 50}%"></span>`;
+      style="--sprite-x:${column * 25}%;--sprite-y:${row * 50}%;${sheet}"></span>`;
   }
   const palettes = [
     ['#fae3a0', '#98694f', '#24374b'], ['#f4ca93', '#a54a65', '#332b53'],
@@ -197,7 +207,7 @@ function render(focus, scored = false) {
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
     return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''} reorderable-joker${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
-      <button type="button" class="joker-card-face${illustratedJokers.has(id) ? ' illustrated-joker' : ''}" data-joker-info="${index}"
+      <button type="button" class="joker-card-face${(illustratedJokers.has(id) || illustratedJokersSecond.has(id)) ? ' illustrated-joker' : ''}" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
         ${jokerPortrait(id, mark)}

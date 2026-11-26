@@ -2150,7 +2150,7 @@ button.primary {
 .joker-illustration.joker-portrait-pixel {
   display: block;
   background-color: #19273a;
-  background-image: url("./art/joker-originals-v1.webp");
+  background-image: var(--portrait-sheet, url("./art/joker-originals-v1.webp"));
   background-repeat: no-repeat;
   background-size: 500% 300%;
   background-position: var(--sprite-x) var(--sprite-y);
@@ -2175,7 +2175,7 @@ button.primary {
 }
 .joker-stack-card.polychrome-joker .joker-illustration.joker-portrait-pixel {
   background-color: #19273a;
-  background-image: url("./art/joker-originals-v1.webp");
+  background-image: var(--portrait-sheet, url("./art/joker-originals-v1.webp"));
   background-size: 500% 300%;
   background-position: var(--sprite-x) var(--sprite-y);
   box-shadow: inset 0 0 0 1px #ffffff77, 0 0 7px #fff1a8;

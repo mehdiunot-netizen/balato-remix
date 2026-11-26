@@ -24,3 +24,30 @@ still display the prior symbolic fallback. Keep this mapping stable across save 
 
 The negative and polychrome editions use the same art with separate CSS treatments.
 Artwork is for visual use only, with no changes to joker effects, blind structure, or saves.
+
+
+## Second artwork batch (original designs, inspired by retro casino pixel art)
+
+Image: `art/joker-originals-v2.webp` (240×144 WebP, 5 columns × 3 rows).
+This is original generated artwork, not a modified copy of Balatro's pixel sprites.
+
+Row-major tile mappings:
+1. Chambre d’écho (crystal chamber)
+2. Astre souverain (crowned star)
+3. Orbe royal (royal crystal globe)
+4. Comète d’or (golden meteor)
+5. Joker (asymmetric carnival mask)
+6. Joker joyeux (laughing gold mask)
+7. Joker farfelu (triple purple jester mask)
+8. Joker fou (contrasting theater masks)
+9. Joker déjanté (spiral jester mask)
+10. Joker pince-sans-rire (stone-faced mask)
+11. Joker sournois (fox with playing cards)
+12. Joker rusé (raven wizard)
+13. Joker malin (owl with monocle)
+14. Joker retors (serpent around cards)
+15. Joker habile (raccoon magician and dice)
+
+The UI chooses the image sheet by stable joker numeric ID, preserving the
+original v1 portraits. Remaining jokers retain their symbolic fallback.
+The gameplay engine, nine blinds, saves and consumable touch behavior are untouched.
