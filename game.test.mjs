@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, offeredJokerPack, openEclipse, openPack, openJokerPack, chooseJokerPack, jokerPacks, packs, previewHand, pruneDeck, restoreRun, reorderConsumable, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, offeredJokerPack, openEclipse, openPack, openJokerPack, chooseJokerPack, jokerPacks, packs, previewHand, pruneDeck, restoreRun, rerollPrice, rerollShop, reorderConsumable, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -149,7 +149,7 @@ test('les nouveaux jokers utilisent les cartes gardées et le numéro de main da
     { type: 'factor', id: owned[2], slot: 2, factor: 1.75 },
   ]);
   assert.equal(previewHand({ ...state, plays: 3 }, played).mult, 6);
-  assert.equal(restoreRun({ ...state, catalogSize: undefined }).catalogSize, 7);
+  assert.equal(restoreRun({ ...state, catalogSize: undefined }).catalogSize, jokers.length);
 });
 
 test('les figures et les as valent onze jetons', () => {
@@ -674,4 +674,51 @@ test('packs Joker : trois places et personnage Négatif respectés', () => {
   const chosen = chooseJokerPack(opened, opened.jokerPackChoices[0]);
   assert.equal(jokerSlotsUsed(chosen), 0);
   assert.deepEqual(chosen.negativeSlots, [neg.owned.length]);
+});
+
+
+test('nouvelle et ancienne sauvegarde : toute la boutique jouable et variation par seed', () => {
+  const samples = ['VARIETE-A', 'VARIETE-B', 'VARIETE-C'];
+  const straight = cards('♥10', '♥11', '♥12', '♥13', '♥14');
+  for (const seed of samples) {
+    let state = start(seed);
+    const shops = [];
+    const packsSeen = [], jokerPacksSeen = [], consumed = [];
+    for (let round = 0; round < 9; round++) {
+      // Simulate a legal winning hand without changing the saved shop RNG.
+      const playState = { ...state, hand: straight, target: 1 };
+      const won = useCards(playState, straight.map(card => card.id), 'play');
+      assert.equal(won.phase, 'shop');
+      assert.equal(won.offers.length, 3);
+      assert.equal(new Set(won.offers).size, won.offers.length);
+      assert.ok(won.offers.every(id => !jokers[id].prototype && !jokers[id].legendary));
+      assert.deepEqual(useCards(playState, straight.map(card => card.id), 'play').offers, won.offers);
+      if (shops.length) assert.equal(won.offers.filter(id => shops.at(-1).includes(id)).length, 0);
+      shops.push(won.offers);
+      packsSeen.push(offeredPack(won));
+      jokerPacksSeen.push(offeredJokerPack(won));
+      consumed.push(consumableOffer(won)?.id);
+      state = advance(won);
+    }
+    assert.ok(new Set(shops.flat()).size > 9, 'plus de neuf jokers variés proposés');
+    assert.ok(packsSeen.slice(1).every((id, i) => id !== packsSeen[i]));
+    assert.ok(jokerPacksSeen.slice(1).every((id, i) => id !== jokerPacksSeen[i]));
+    assert.ok(consumed.slice(1).every((id, i) => id !== consumed[i]));
+  }
+  const legacy = restoreRun({ ...start('OLD-SHOP'), catalogSize: 7 });
+  assert.equal(legacy.catalogSize, jokers.length);
+});
+
+test('relancer une boutique conserve sa seed et évite les mêmes jokers', () => {
+  const hand = cards('♥10', '♥11', '♥12', '♥13', '♥14');
+  const state = start('REROLL-VAR');
+  const shop = useCards({ ...state, hand, target: 1 },
+    hand.map(c => c.id), 'play');
+  const wealthy = { ...shop, credits: 100 };
+  const rerolled = rerollShop(wealthy);
+  assert.equal(rerolled.phase, 'shop');
+  assert.equal(rerolled.offers.length, 3);
+  assert.ok(rerolled.offers.every(id => !wealthy.offers.includes(id)));
+  assert.deepEqual(rerollShop(wealthy), rerolled);
+  assert.equal(rerolled.credits, 100 - rerollPrice(wealthy));
 });

@@ -82,8 +82,10 @@ export function createSeed() {
 }
 
 export function restoreRun(state) {
-  if (state.catalogSize) return state;
-  return { ...state, seed: state.seed ?? createSeed(), legacy: state.legacy ?? !state.seed, catalogSize: 7 };
+  // Older saved runs were restricted to seven launch jokers. Preserve the save
+  // itself, but make today's full tested shop pool available on continuation.
+  return { ...state, seed: state.seed ?? createSeed(), legacy: state.legacy ?? !state.seed,
+    catalogSize: jokers.length };
 }
 
 export const augures = {
@@ -261,9 +263,11 @@ export const consumableSlotsFor = state => CONSUMABLE_SLOTS + (state?.character 
 
 export function consumableOffer(state) {
   if (state.phase !== 'shop' || state.consumableBought) return undefined;
-  const random = seededRandom(state.seed, 'consumable-offer', state.round);
   const available = consumables.filter(item => item.id !== 'relance');
-  return available[Math.floor(random() * available.length)];
+  // Alternate the available items with a seed-defined starting point.
+  // A given seed is still reproducible, but neighbouring shops differ.
+  const random = seededRandom(state.seed, 'consumable-offer-cycle', 0);
+  return available[(Math.floor(random() * available.length) + state.round) % available.length];
 }
 
 export function buyConsumable(state, id) {
@@ -386,6 +390,30 @@ function shuffle(items, random) {
   return mixed;
 }
 
+// Deterministic, non-repeating shop deck. Prototype/legendary jokers remain
+// excluded from ordinary offers, but no historical 7-joker cap survives.
+function shopJokerPool(state) {
+  return jokers.map((joker, id) => ({ joker, id }))
+    .filter(({ joker, id }) => !state.owned.includes(id) && !joker.legendary && !joker.prototype)
+    .map(({ id }) => id);
+}
+function drawShopJokers(state, purpose = 'shop', round = state.round) {
+  const pool = shopJokerPool(state);
+  const previous = new Set(state.offers ?? []);
+  const seen = new Set(state.shopSeen ?? []);
+  const random = seededRandom(state.seed, purpose, round);
+  // Fill from never-seen jokers first, then previously seen ones, keeping
+  // the preceding offer out until strictly necessary.
+  const fresh = shuffle(pool.filter(id => !seen.has(id) && !previous.has(id)), random);
+  const repeated = shuffle(pool.filter(id => seen.has(id) && !previous.has(id)), random);
+  const lastResort = shuffle(pool.filter(id => previous.has(id)), random);
+  const offers = [...fresh, ...repeated, ...lastResort].slice(0, 3);
+  const visited = [...new Set([...(state.shopSeen ?? []), ...offers])];
+  // All eligible jokers have appeared: start another cycle next shop.
+  const shopSeen = pool.length && pool.every(id => visited.includes(id)) ? offers : visited;
+  return { offers, shopSeen };
+}
+
 export function previewHand(state, cards, trace = false) {
   const opening = blindFor(state).plays ?? 4;
   return evaluate(cards, state.owned, {
@@ -401,7 +429,7 @@ export function start(seed = createSeed(), character = 'classique') {
   const chosen = characters.some(c => c.id === character) ? character : 'classique';
   const state = { seed, character: chosen, round: 0,
     credits: chosen === 'riche' ? 13 : 3,
-    owned: [], handHistory: [], consumables: [], catalogSize: jokers.length };
+    owned: [], handHistory: [], consumables: [], catalogSize: jokers.length, shopSeen: [] };
   const random = seededRandom(seed, 'character-start', 0);
   if (chosen === 'chanceux') {
     const card = deck[Math.floor(random() * deck.length)];
@@ -528,9 +556,8 @@ export function useCards(state, ids, action) {
       next.phase = lastLegacyBlind || classicWin ? 'win' : 'shop';
       next.rerolls = 0;
       if (!lastLegacyBlind) {
-        const available = jokers.slice(0, state.catalogSize ?? 7).map((_, i) => i)
-          .filter(i => !state.owned.includes(i) && !jokers[i].legendary && !jokers[i].prototype);
-        next.offers = shuffle(available, seededRandom(state.seed, 'shop', state.round)).slice(0, 3);
+        Object.assign(next, drawShopJokers({ ...next, shopSeen: state.shopSeen ?? [],
+          offers: state.offers ?? [], round: state.round }));
       }
       if (dnaCopies.length) next.hand = state.hand.filter(c => !ids.includes(c.id)).concat(dnaCopies);
       return next;
@@ -598,19 +625,12 @@ export function rerollPrice(state) {
 }
 
 export function rerollShop(state) {
-  if (state.phase !== 'shop' || state.credits < rerollPrice(state)) return state;
-  const available = jokers.slice(0, state.catalogSize ?? 7).map((joker, id) => ({ joker, id }))
-    .filter(({ joker, id }) => !state.owned.includes(id) && !joker.legendary && !joker.prototype)
-    .map(({ id }) => id);
-  if (!available.length) return state;
-  const oldOffers = state.offers ?? [];
+  if (state.phase !== 'shop' || state.credits < rerollPrice(state) ||
+      !shopJokerPool(state).length) return state;
   const nextRoll = state.rerolls ?? 0;
-  const random = seededRandom(state.seed, 'shop-reroll', state.round * 100000 + nextRoll);
-  // Prefer unfamiliar offers; refill from previous cards only if necessary.
-  const fresh = shuffle(available.filter(id => !oldOffers.includes(id)), random);
-  const repeats = shuffle(available.filter(id => oldOffers.includes(id)), random);
+  const drawn = drawShopJokers(state, 'shop-reroll', state.round * 100000 + nextRoll);
   return { ...state, credits: state.credits - rerollPrice(state),
-    offers: [...fresh, ...repeats].slice(0, 3), rerolls: nextRoll + 1 };
+    ...drawn, rerolls: nextRoll + 1 };
 }
 
 function remainingDeck(state) {
@@ -636,16 +656,16 @@ export function offeredPack(state) {
   if (state.phase !== 'shop' || state.packBought) return undefined;
   const { count } = augureOptions(state);
   if (count < packs[0].count) return undefined;
-  const random = seededRandom(state.seed, 'pack-offer', state.round);
-  const roll = random();
-  return count >= packs[2].count && roll < 0.12 ? 2 :
-    count >= packs[1].count && roll < 0.35 ? 1 : 0;
+  const available = packs.map((pack, id) => ({ pack, id }))
+    .filter(({ pack }) => count >= pack.count);
+  const random = seededRandom(state.seed, 'pack-offer-cycle', 0);
+  return available[(Math.floor(random() * available.length) + state.round) % available.length].id;
 }
 
 function jokerPackCandidates(state) {
   return jokers.map((joker, id) => ({ joker, id }))
-    .filter(({ joker, id }) => id < (state.catalogSize ?? jokers.length) &&
-      !state.owned.includes(id) && !joker.legendary && !joker.prototype)
+    .filter(({ joker, id }) => !state.owned.includes(id) &&
+      !joker.legendary && !joker.prototype)
     .map(({ id }) => id);
 }
 
@@ -654,8 +674,10 @@ export function offeredJokerPack(state) {
       (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3)) return undefined;
   const count = jokerPackCandidates(state).length;
   if (count < jokerPacks[0].count) return undefined;
-  const random = seededRandom(state.seed, 'joker-pack-offer', state.round);
-  return count >= jokerPacks[1].count && random() < 0.3 ? 1 : 0;
+  const available = jokerPacks.map((pack, id) => ({ pack, id }))
+    .filter(({ pack }) => count >= pack.count);
+  const random = seededRandom(state.seed, 'joker-pack-offer-cycle', 0);
+  return available[(Math.floor(random() * available.length) + state.round) % available.length].id;
 }
 
 // Drawing a joker pack never modifies the shop offers or the saved collection.
@@ -778,8 +800,8 @@ export function continueRun(state) {
 export function advance(state) {
   if (state.phase !== 'shop') return state;
   return deal({ seed: state.seed, legacy: state.legacy ?? false, endless: state.endless ?? false, round: state.round + 1,
-    credits: state.credits, owned: state.owned, catalogSize: state.catalogSize,
-    consumables: state.consumables ?? [], character: state.character,
+    credits: state.credits, owned: state.owned, catalogSize: jokers.length,
+    shopSeen: state.shopSeen ?? [], consumables: state.consumables ?? [], character: state.character,
     handHistory: state.handHistory ?? [],
     bonusCards: state.bonusCards, polychromeSlots: state.polychromeSlots,
     enhancements: state.enhancements, removed: state.removed, negativeSlots: state.negativeSlots,
