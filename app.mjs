@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=24';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=25';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -294,7 +294,7 @@ function render(focus, scored = false) {
   } else if (state.phase === 'pack') {
     content = `
       <section class="shop">
-        <header class="shop-header"><div><h3 tabindex="-1">Augures</h3><p>Améliore une carte de ton paquet.</p></div>
+        <header class="shop-header"><div><h3 tabindex="-1">Tarots</h3><p>Choisis un Tarot, puis une carte à améliorer.</p></div>
           <button data-action="skip-pack">Passer</button></header>
         <ul class="offers augure-options">${state.choices.map(card => {
           const augure = augures[card.augure];
@@ -302,9 +302,24 @@ function render(focus, scored = false) {
             <small>${augure.text}</small><button class="primary" data-augure="${card.id}">${card.augure === 'prune' ? 'Choisir' : 'Choisir l’effet'}</button></li>`;
         }).join('')}</ul>
       </section>`;
+  } else if (state.phase === 'joker-pack') {
+    content = `
+      <section class="shop">
+        <header class="shop-header"><div><h3 tabindex="-1">Pack Joker</h3>
+          <p>Choisis un joker à équiper parmi ceux proposés.</p></div>
+          <button data-action="skip-joker-pack">Passer</button></header>
+        <ul class="offers joker-pack-options">${(state.jokerPackChoices ?? []).map(id => {
+          const joker = jokers[id];
+          return `<li>${jokerPortrait(id, joker.mark)}
+            <strong>${joker.name}</strong><small>${joker.text}</small>
+            <button class="primary" data-joker-pack-choice="${id}">Choisir</button></li>`;
+        }).join('')}</ul>
+      </section>`;
   } else if (state.phase === 'shop') {
     const packId = offeredPack(state);
     const pack = packs[packId];
+    const jokerPackId = offeredJokerPack(state);
+    const jokerPack = jokerPacks[jokerPackId];
     const eclipse = eclipseOffer(state);
     const consumable = consumableOffer(state);
     content = `
@@ -313,9 +328,13 @@ function render(focus, scored = false) {
           <div><h3 tabindex="-1">Boutique</h3><p>Blinde franchie · +${state.reward} crédits${state.goldReward ? ' (dont ' + state.goldReward + ' Ducat)' : ''}</p></div>
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
-        ${pack || eclipse || consumable ? `<div class="pack-shelf" aria-label="Pochettes et consommables">
+        ${pack || jokerPack || eclipse || consumable ? `<div class="pack-shelf" aria-label="Pochettes et consommables">
           ${pack ? `<button data-pack="${packId}" ${state.credits < shopPrice(state, pack.price) ? 'disabled' : ''}>
             ${pack.name} · ${shopPrice(state, pack.price)} cr.</button>` : ''}
+          ${jokerPack ? `<button data-joker-pack="${jokerPackId}"
+            ${state.credits < shopPrice(state, jokerPack.price) ? 'disabled' : ''}
+            aria-label="Ouvrir ${jokerPack.name}, choisir un joker sur ${jokerPack.count} pour ${shopPrice(state, jokerPack.price)} crédits">
+            ${jokerPack.name} · ${shopPrice(state, jokerPack.price)} cr.</button>` : ''}
           ${eclipse ? `<button data-action="open-eclipse" ${state.credits < shopPrice(state, ECLIPSE_PRICE) ? 'disabled' : ''}>
             Pack des Éclipses · ${shopPrice(state, ECLIPSE_PRICE)} cr.</button>` : ''}
           ${consumable ? `<button data-buy-consumable="${consumable.id}"
@@ -676,6 +695,9 @@ game.addEventListener('click', event => {
   else if (action === 'back-augure-target') next = cancelAugureTarget(state);
   else if (target.dataset.buy !== undefined) next = buy(state, Number(target.dataset.buy));
   else if (target.dataset.pack !== undefined) next = openPack(state, Number(target.dataset.pack));
+  else if (target.dataset.jokerPack !== undefined) next = openJokerPack(state, Number(target.dataset.jokerPack));
+  else if (target.dataset.jokerPackChoice !== undefined) next = chooseJokerPack(state, Number(target.dataset.jokerPackChoice));
+  else if (action === 'skip-joker-pack') next = chooseJokerPack(state, null);
   else if (target.dataset.augure !== undefined) next = chooseAugure(state, target.dataset.augure);
   else if (action === 'skip-pack') next = chooseAugure(state, null);
   else if (action === 'back-prune') next = pruneDeck(state, null);
@@ -706,7 +728,7 @@ game.addEventListener('click', event => {
   render(state.phase === 'play' ? '#blind-name' : 'h3[tabindex="-1"]', action === 'play');
   if (action === 'play') announcement.textContent = state.last.name + ', +' + state.last.total + ' points.';
   else if (action === 'discard') announcement.textContent = 'Cartes remplacées.';
-  else if (target.dataset.buy !== undefined) announcement.textContent = 'Joker équipé.';
+  else if (target.dataset.buy !== undefined || target.dataset.jokerPackChoice !== undefined) announcement.textContent = 'Joker équipé.';
   else if (target.dataset.sell !== undefined) announcement.textContent = 'Joker vendu : ' + saleNotice + '.';
   else if (target.dataset.useConsumable !== undefined) announcement.textContent = 'Consommable utilisé.';
   else if (target.dataset.buyConsumable !== undefined) announcement.textContent = 'Consommable rangé dans l’inventaire.';
