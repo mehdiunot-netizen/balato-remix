@@ -86,9 +86,24 @@ function emblem(index, mark) {
 }
 
 
-// Original miniature joker portraits: each ID keeps a stable palette and motif.
+// Original joker portraits: artwork tiles are unique to Contre-Pli, not Balatro sprites.
+// Cell positions are stable; numeric joker IDs must never be reordered in saved runs.
+const illustratedJokers = new Map([
+  [0, 0], [1, 1], [2, 2], [3, 3], [4, 4],
+  [5, 5], [14, 6], [15, 7], [6, 8], [7, 9],
+  [8, 10], [9, 11], [10, 12], [11, 13], [12, 14],
+]);
+
+// Older jokers without a finished portrait keep the accessible symbolic fallback: each ID keeps a stable palette and motif.
 // CSS-based art stays crisp and light on iPhone.
 function jokerPortrait(id, mark) {
+  const tile = illustratedJokers.get(id);
+  if (tile !== undefined) {
+    const column = tile % 5;
+    const row = Math.floor(tile / 5);
+    return `<span class="joker-illustration joker-portrait-pixel" aria-hidden="true"
+      style="--sprite-x:${column * 25}%;--sprite-y:${row * 50}%"></span>`;
+  }
   const palettes = [
     ['#fae3a0', '#98694f', '#24374b'], ['#f4ca93', '#a54a65', '#332b53'],
     ['#aee3db', '#277c87', '#1e304e'], ['#fee0aa', '#9162a0', '#28394f'],
@@ -168,7 +183,7 @@ function render(focus, scored = false) {
     const negative = state.negativeSlots?.includes(index);
     const polychrome = state.polychromeSlots?.includes(index);
     return `<li class="joker-stack-card${pulse ? ' triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''} reorderable-joker${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}" style="--joker-order:${index}">
-      <button type="button" class="joker-card-face" data-joker-info="${index}"
+      <button type="button" class="joker-card-face${illustratedJokers.has(id) ? ' illustrated-joker' : ''}" data-joker-info="${index}"
         aria-label="${name}${negative ? ', négatif' : ''}${polychrome ? ', polychrome' : ''} : voir les détails${state.phase === 'shop' ? ' ou faire glisser pour vendre' : ''}">
         <span class="joker-card-top" aria-hidden="true">✦ <span>${index + 1}</span></span>
         ${jokerPortrait(id, mark)}

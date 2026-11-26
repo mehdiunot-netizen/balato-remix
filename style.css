@@ -2143,3 +2143,40 @@ button.primary {
 .loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) > .joker-stack-card:not(:first-child) {
   margin-left: calc(-1 * clamp(11px, 1.8vw, 22px)) !important;
 }
+
+/* v34 — original Contre-Pli joker portraits (5 x 3 spritesheet).
+   Deliberately independent of Balatro's copyrighted character sprites.
+   Applies in the play area, shop and booster selection without gameplay changes. */
+.joker-illustration.joker-portrait-pixel {
+  display: block;
+  background-color: #19273a;
+  background-image: url("./art/joker-originals-v1.webp");
+  background-repeat: no-repeat;
+  background-size: 500% 300%;
+  background-position: var(--sprite-x) var(--sprite-y);
+  border: 1px solid #deb974;
+  box-shadow: inset 0 0 0 1px #fff3d764, 0 2px 3px #07101a;
+}
+.joker-illustration.joker-portrait-pixel::before { content: none; }
+.joker-illustration.joker-portrait-pixel::after {
+  inset: 0; border: 1px solid #f8e9ba55; border-radius: 2px;
+}
+.joker-card-face.illustrated-joker .joker-card-top { display: none; }
+.joker-card-face.illustrated-joker .joker-portrait-pixel {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+}
+.joker-card-face.illustrated-joker .joker-card-name {
+  margin-top: 2px;
+  font-size: clamp(.42rem, 1.05vw, .54rem);
+  line-height: 1.05;
+}
+.joker-stack-card.polychrome-joker .joker-illustration.joker-portrait-pixel {
+  background-color: #19273a;
+  background-image: url("./art/joker-originals-v1.webp");
+  background-size: 500% 300%;
+  background-position: var(--sprite-x) var(--sprite-y);
+  box-shadow: inset 0 0 0 1px #ffffff77, 0 0 7px #fff1a8;
+}

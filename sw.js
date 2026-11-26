@@ -1,6 +1,6 @@
-const CACHE = 'contre-pli-33';
-const assets = ['./', './index.html', './style.css?v=33', './app.mjs?v=29', './game.mjs?v=26',
-  './jokers.mjs?v=24', './manifest.webmanifest', './emblem.svg', './touch.png', './art/observatoire.jpg', './art/figures.jpg', './art/emblemes.jpg', './art/augures.jpg'];
+const CACHE = 'contre-pli-34';
+const assets = ['./', './index.html', './style.css?v=34', './app.mjs?v=30', './game.mjs?v=26',
+  './jokers.mjs?v=24', './manifest.webmanifest', './emblem.svg', './touch.png', './art/observatoire.jpg', './art/figures.jpg', './art/emblemes.jpg', './art/augures.jpg', './art/joker-originals-v1.webp'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(assets)).then(() => self.skipWaiting()));
