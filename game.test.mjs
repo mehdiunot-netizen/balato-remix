@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, restoreRun, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
+import { advance, applyAugure, casinoBoard, casinoOffers, chooseCasinoRoom, skipCasinoRow, openCasino, openCasinoBonusPack, startInCasino, characterFor, characters, consumableSlotsFor, shopPrice, blindFor, blinds, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, continueRun, deckFor, eclipseOffer, deck, evaluate, jokers, jokerSlotsUsed, offeredPack, offeredJokerPack, openEclipse, openPack, openJokerPack, chooseJokerPack, jokerPacks, packs, previewHand, pruneDeck, restoreRun, reorderJoker, sellJoker, start, useCards, useConsumable } from './game.mjs';
 
 const cards = (...ids) => ids.map(id => deck.find(c => c.id === id));
 
@@ -167,8 +167,9 @@ test('une pochette tirée par la seed survit à un rechargement et transforme un
   assert.equal(opened.choices.length, packs[id].count);
   assert.deepEqual(opened, openPack(shop, id));
   assert.equal(openPack(shop, 1 - id), shop);
-  assert.deepEqual(new Set(Array.from({ length: 32 }, (_, i) => offeredPack({ ...shop, seed: String(i) }))),
-    new Set([0, 1]));
+  const offered = Array.from({ length: 32 }, (_, i) => offeredPack({ ...shop, seed: String(i) }));
+  assert.ok(offered.every(id => Number.isInteger(id) && id >= 0 && id < packs.length));
+  assert.ok(offered.includes(0));
   assert.equal(advance(opened), opened);
   const saved = restoreRun(JSON.parse(JSON.stringify(opened)));
   const choice = saved.choices.find(card => card.augure !== 'prune');
@@ -554,4 +555,57 @@ test('Skip de colonne : exactement trois bonus, boss non skippable et sauvegarde
  assert.equal(casinoOffers(two)[0].blind.kind,'Boss');
  assert.equal(skipCasinoRow(two),two);
  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(two))),two);
+});
+
+
+test('packs Tarot : trois tailles, prix cohérents et tirage déterministe', () => {
+  const shop = { ...start('TAROTS-2026'), phase: 'shop', credits: 50 };
+  assert.equal(packs.length, 3);
+  for (const seed of ['TAROTS-2026', 'TAROT-LARGE', 'TAROT-GEANT']) {
+    const state = { ...shop, seed };
+    const index = offeredPack(state);
+    const opened = openPack(state, index);
+    assert.equal(opened.phase, 'pack');
+    assert.equal(opened.choices.length, packs[index].count);
+    assert.equal(state.credits - opened.credits, shopPrice(state, packs[index].price));
+    assert.deepEqual(opened, openPack(state, index));
+  }
+});
+
+test('packs Joker : achat, choix unique, refus des doublons et sauvegarde', () => {
+  const shop = { ...start('JOKER-2026'), phase: 'shop', credits: 30 };
+  const index = offeredJokerPack(shop);
+  assert.ok(index === 0 || index === 1);
+  assert.equal(jokerPacks.length, 2);
+  const opened = openJokerPack(shop, index);
+  assert.equal(opened.phase, 'joker-pack');
+  assert.equal(opened.credits, shop.credits - shopPrice(shop, jokerPacks[index].price));
+  assert.equal(opened.jokerPackChoices.length, jokerPacks[index].count);
+  assert.equal(new Set(opened.jokerPackChoices).size, opened.jokerPackChoices.length);
+  assert.deepEqual(openJokerPack(shop, index), opened);
+  assert.deepEqual(restoreRun(JSON.parse(JSON.stringify(opened))), opened);
+  assert.equal(chooseJokerPack(opened, -1), opened);
+  assert.equal(chooseJokerPack(opened, 1.5), opened);
+  assert.equal(chooseJokerPack(opened, 9999), opened);
+  const id = opened.jokerPackChoices[0];
+  const chosen = chooseJokerPack(opened, id);
+  assert.deepEqual(chosen.owned, [...shop.owned, id]);
+  assert.equal(chosen.phase, 'shop');
+  assert.deepEqual(chosen.jokerPackChoices, []);
+  assert.equal(offeredJokerPack(chosen), undefined, 'un seul pack Joker par boutique');
+  assert.equal(openJokerPack(chosen, index), chosen);
+  const skip = chooseJokerPack(opened, null);
+  assert.equal(skip.phase, 'shop');
+  assert.deepEqual(skip.owned, shop.owned);
+});
+
+test('packs Joker : trois places et personnage Négatif respectés', () => {
+  const full = { ...start('PLEIN-2026'), phase: 'shop', credits: 50, owned: [0, 1, 2] };
+  assert.equal(offeredJokerPack(full), undefined);
+  assert.equal(openJokerPack(full, 0), full);
+  const neg = { ...start('NEG-JOKER-2026', 'negatif'), phase: 'shop', credits: 50 };
+  const opened = openJokerPack(neg, offeredJokerPack(neg));
+  const chosen = chooseJokerPack(opened, opened.jokerPackChoices[0]);
+  assert.equal(jokerSlotsUsed(chosen), 0);
+  assert.deepEqual(chosen.negativeSlots, [neg.owned.length]);
 });
