@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./emblem.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./touch.png">
-  <link rel="stylesheet" href="./style.css?v=17">
+  <link rel="stylesheet" href="./style.css?v=18">
   <title>Contre-Pli</title>
 </head>
 <body>
@@ -28,7 +28,7 @@
       </div>
       <nav class="lobby-actions" aria-label="Menu principal">
         <button class="primary" id="enter">Jouer</button>
-        <button id="new-run" aria-haspopup="dialog">Seed</button>
+        <button id="new-run" aria-haspopup="dialog">Personnages</button>
       </nav>
     </div>
   </section>
@@ -39,9 +39,19 @@
   <dialog class="rules seed-dialog" id="seed-dialog" aria-labelledby="seed-title">
     <form id="seed-form">
       <h2 id="seed-title">Nouvelle partie</h2>
+      <div class="character-picker">
+        <label for="character-select">Choisir un personnage</label>
+        <select id="character-select" name="character" required></select>
+        <div class="character-preview" aria-live="polite">
+          <span id="character-medallion" aria-hidden="true">♠</span>
+          <div><strong id="character-name">Sans personnage</strong>
+            <p id="character-description">Règles classiques.</p></div>
+        </div>
+      </div>
       <label id="seed">Seed (facultative)
         <input type="text" maxlength="64" autocapitalize="off" autocomplete="off" spellcheck="false">
       </label>
+      <p class="new-run-note">Une nouvelle partie remplace la sauvegarde actuelle. Le personnage d'une partie en cours ne change pas.</p>
       <div class="seed-actions">
         <button type="button" id="cancel-seed">Retour</button>
         <button class="primary" type="submit">Jouer</button>
@@ -65,6 +75,6 @@
     <p id="score-detail-total"></p>
     <form method="dialog"><button class="primary">Retour</button></form>
   </dialog>
-  <script type="module" src="./app.mjs?v=17"></script>
+  <script type="module" src="./app.mjs?v=18"></script>
 </body>
 </html>

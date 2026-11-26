@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, chooseAugure, chooseEclipse, consumableOffer, consumables, CONSUMABLE_SLOTS, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, start, useCards, useConsumable } from './game.mjs?v=17';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, characterFor, characters, chooseAugure, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openEclipse, openPack, packs, previewHand, pruneDeck, removableCount, restoreRun, sellJoker, shopPrice, start, useCards, useConsumable } from './game.mjs?v=18';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
@@ -16,6 +16,29 @@ const rules = document.querySelector('#rules');
 const scoreDialog = document.querySelector('#score-dialog');
 const seedDialog = document.querySelector('#seed-dialog');
 const seedInput = document.querySelector('#seed input');
+const characterSelect = document.querySelector('#character-select');
+const characterName = document.querySelector('#character-name');
+const characterDescription = document.querySelector('#character-description');
+const characterMedallion = document.querySelector('#character-medallion');
+for (const character of characters) {
+  const option = document.createElement('option');
+  option.value = character.id;
+  option.textContent = character.mark + ' ' + character.name;
+  characterSelect.append(option);
+}
+function updateCharacterPreview() {
+  const chosen = characters.find(c => c.id === characterSelect.value) ?? characters[0];
+  characterName.textContent = chosen.name;
+  characterDescription.textContent = chosen.text;
+  characterMedallion.textContent = chosen.mark;
+}
+characterSelect.addEventListener('change', updateCharacterPreview);
+function openCharacterPicker() {
+  characterSelect.value = state?.character ?? 'classique';
+  updateCharacterPreview();
+  seedDialog.showModal();
+}
+updateCharacterPreview();
 if (state) enter.textContent = 'Reprendre';
 
 function showTable() {
@@ -26,17 +49,17 @@ function showTable() {
   render('#blind-name');
 }
 
-document.querySelector('#new-run').addEventListener('click', () => seedDialog.showModal());
+document.querySelector('#new-run').addEventListener('click', openCharacterPicker);
 document.querySelector('#cancel-seed').addEventListener('click', () => seedDialog.close());
 document.querySelector('#seed-form').addEventListener('submit', event => {
   event.preventDefault();
-  state = start(seedInput.value.trim() || undefined);
+  state = start(seedInput.value.trim() || undefined, characterSelect.value);
   saleNotice = null;
   seedDialog.close();
   showTable();
 });
 enter.addEventListener('click', () => {
-  state ??= start();
+  if (!state) return openCharacterPicker();
   showTable();
 });
 
@@ -94,12 +117,15 @@ function render(focus, scored = false) {
     const activation = activations.findIndex(step => step.slot === undefined ? step.id === id : step.slot === index);
     const pulse = scored && activation >= 0;
     const negative = state.negativeSlots?.includes(index);
-    return `<li class="${pulse ? 'triggered' : ''}${negative ? ' negative-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong>${emblem(id, mark)}
-      ${name}${negative ? ' · Négatif' : ''}</strong>${state.phase === 'shop' ? '<span class="drag-hint" aria-hidden="true">⇢ Glisser</span>' : ''}</summary><small>${text}</small>${state.phase === "shop" ? `<button type="button" class="sell-joker" data-sell="${index}" aria-label="Vendre ${name} pour ${Math.max(1, Math.floor(jokers[id].price / 2))} crédits">Vendre · +${Math.max(1, Math.floor(jokers[id].price / 2))} cr.</button>` : ""}</details></li>`;
+    const polychrome = state.polychromeSlots?.includes(index);
+    return `<li class="${pulse ? 'triggered' : ''}${negative ? ' negative-joker' : ''}${polychrome ? ' polychrome-joker' : ''}${state.phase === 'shop' ? ' draggable-joker' : ''}" data-joker-slot="${index}"${pulse ? ' style="--activation:' + activation + '"' : ''}><details><summary><strong>${emblem(id, mark)}
+      ${name}${negative ? ' · Négatif' : ''}${polychrome ? ' · Polychrome' : ''}</strong>${state.phase === 'shop' ? '<span class="drag-hint" aria-hidden="true">⇢ Glisser</span>' : ''}</summary><small>${text}</small>${state.phase === "shop" ? `<button type="button" class="sell-joker" data-sell="${index}" aria-label="Vendre ${name} pour ${Math.max(1, Math.floor(jokers[id].price / 2))} crédits">Vendre · +${Math.max(1, Math.floor(jokers[id].price / 2))} cr.</button>` : ""}</details></li>`;
   }).join('');
 
   const inventory = state.consumables ?? [];
-  const consumableSlots = Array.from({ length: CONSUMABLE_SLOTS }, (_, index) => {
+  const activeCharacter = characterFor(state);
+  const capacity = consumableSlotsFor(state);
+  const consumableSlots = Array.from({ length: capacity }, (_, index) => {
     const item = consumables.find(value => value.id === inventory[index]);
     if (!item) return '<span class="consumable-empty" aria-label="Emplacement de consommable vide">+</span>';
     const usable = item.id === 'bourse' || state.phase === 'play';
@@ -196,20 +222,20 @@ function render(focus, scored = false) {
           <button class="primary" data-action="advance">Blinde suivante</button>
         </header>
         ${pack || eclipse || consumable ? `<div class="pack-shelf" aria-label="Pochettes et consommables">
-          ${pack ? `<button data-pack="${packId}" ${state.credits < pack.price ? 'disabled' : ''}>
-            ${pack.name} · ${pack.price} cr.</button>` : ''}
-          ${eclipse ? `<button data-action="open-eclipse" ${state.credits < ECLIPSE_PRICE ? 'disabled' : ''}>
-            Pack des Éclipses · ${ECLIPSE_PRICE} cr.</button>` : ''}
+          ${pack ? `<button data-pack="${packId}" ${state.credits < shopPrice(state, pack.price) ? 'disabled' : ''}>
+            ${pack.name} · ${shopPrice(state, pack.price)} cr.</button>` : ''}
+          ${eclipse ? `<button data-action="open-eclipse" ${state.credits < shopPrice(state, ECLIPSE_PRICE) ? 'disabled' : ''}>
+            Pack des Éclipses · ${shopPrice(state, ECLIPSE_PRICE)} cr.</button>` : ''}
           ${consumable ? `<button data-buy-consumable="${consumable.id}"
-            ${state.credits < consumable.price || (state.consumables ?? []).length >= CONSUMABLE_SLOTS ? 'disabled' : ''}
-            aria-label="Acheter ${consumable.name} pour ${consumable.price} crédits">${consumable.mark} ${consumable.name} · ${consumable.price} cr.</button>` : ''}</div>` : ''}
+            ${state.credits < shopPrice(state, consumable.price) || (state.consumables ?? []).length >= capacity ? 'disabled' : ''}
+            aria-label="Acheter ${consumable.name} pour ${shopPrice(state, consumable.price)} crédits">${consumable.mark} ${consumable.name} · ${shopPrice(state, consumable.price)} cr.</button>` : ''}</div>` : ''}
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
-          const full = jokerSlotsUsed(state) >= 3;
+          const full = state.character !== 'negatif' && jokerSlotsUsed(state) >= 3;
           return `<li>${emblem(id, joker.mark)}
           <div><strong>${joker.name}</strong><small>${joker.text}</small></div>
           <button data-buy="${id}" aria-label="Acheter ${joker.name} pour ${joker.price} crédits"
-          ${full || state.credits < joker.price ? 'disabled' : ''}>${joker.price} cr.</button></li>`;
+          ${full || state.credits < shopPrice(state, joker.price) ? 'disabled' : ''}>${shopPrice(state, joker.price)} cr.</button></li>`;
         }).join('')}</ul>
         ${jokerSlotsUsed(state) >= 3 ? '<p>Vos trois emplacements sont occupés.</p>' : ''}
       </section>`;
@@ -228,6 +254,7 @@ function render(focus, scored = false) {
     <section class="blind" aria-labelledby="blind-name">
       <span class="eyebrow">${state.legacy ? 'Blinde ' + (state.round + 1) + ' / 6' : state.endless ? 'Infini · Mise ' + blind.ante : 'Mise ' + blind.ante + ' / 8' }</span>
       <h2 id="blind-name" tabindex="-1">${blind.name}</h2>
+      ${activeCharacter.id !== 'classique' ? `<p class="character-status" title="${activeCharacter.text}"><span aria-hidden="true">${activeCharacter.mark}</span> ${activeCharacter.name}</p>` : ''}
       ${blind.rule ? `<p class="boss-rule">Boss · ${blind.rule}</p>` : ''}
       <div class="score ${scored ? 'scored' : ''}"><strong>${state.score}</strong><span>/ ${blind.target} points</span></div>
       <progress aria-label="Progression vers l’objectif" value="${Math.min(state.score, blind.target)}" max="${blind.target}"></progress>
@@ -239,10 +266,10 @@ function render(focus, scored = false) {
       </div>
     </section>
     ${content}
-    <section class="loadout" aria-label="Inventaire">
-      <div class="joker-collection"><h3>Jokers <span>${jokerSlotsUsed(state)}/3</span></h3>
+    <section class="loadout ${state.character === 'magicien' ? 'character-magicien' : ''}" aria-label="Inventaire">
+      <div class="joker-collection"><h3>Jokers <span>${state.character === 'negatif' ? state.owned.length + ' · ∞' : jokerSlotsUsed(state) + '/3'}</span></h3>
         ${loadout ? '<ul>' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}</div>
-      <div class="consumables"><h3>Consommables <span>${inventory.length}/${CONSUMABLE_SLOTS}</span></h3>
+      <div class="consumables"><h3>Consommables <span>${inventory.length}/${capacity}</span></h3>
         <div class="consumable-slots">${consumableSlots}</div></div>
     </section>`;
   if (focus) game.querySelector(focus)?.focus();
@@ -419,7 +446,7 @@ game.addEventListener('click', event => {
     lobby.hidden = false;
     table.hidden = true;
     seedInput.value = '';
-    seedDialog.showModal();
+    openCharacterPicker();
     return;
   }
   else if (action === 'play' || action === 'discard') next = useCards(state, [...selected], action);

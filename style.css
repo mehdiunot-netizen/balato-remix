@@ -956,3 +956,82 @@ button.primary {
 @media (orientation: portrait) {
   .loadout { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* v18 — character selector in the existing scrollable mobile dialog. */
+.seed-dialog {
+  width: min(490px, calc(100vw - 24px));
+  max-width: min(490px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  border: 1px solid #d3b982;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #26434d, #111d2e);
+  box-shadow: 0 20px 55px #04111fae, inset 0 1px #fce6b844;
+}
+#seed-form {
+  display: grid;
+  justify-items: stretch;
+  gap: 9px;
+  max-height: calc(100dvh - 46px);
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+#seed-form h2 { margin: 1px 0 0; }
+.character-picker { display: grid; gap: 5px; min-width: 0; }
+.character-picker label { color: #ffdfac; font-weight: 800; }
+#character-select {
+  appearance: none;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #c9ac7e;
+  border-radius: 7px;
+  background: #263b48;
+  color: #fff0d4;
+  font: 650 .92rem system-ui, sans-serif;
+  padding: 7px 13px;
+  touch-action: manipulation;
+}
+.character-preview {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  min-height: 72px;
+  padding: 6px;
+  gap: 10px;
+  border-radius: 8px;
+  background: linear-gradient(120deg, #143542c9, #1a2a3688);
+}
+#character-medallion {
+  width: 56px; height: 56px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 2px solid #e7c98e;
+  background: radial-gradient(circle at 35% 25%, #637b7b, #1a2a3e 75%);
+  box-shadow: inset 0 0 0 3px #1b394c, 0 4px 8px #071525a2;
+  color: #ffe4b3;
+  font: 900 1.65rem Georgia, serif;
+}
+.character-preview strong { color: #ffdea5; }
+.character-preview p { font-size: .8rem; line-height: 1.25; color: #dbe6d9; margin-top: 3px; }
+#seed-form #seed { width: 100%; margin: 0; }
+#seed-form #seed input { width: 100%; }
+.new-run-note { font-size: .72rem; line-height: 1.3; color: #d6cfb3; margin: 0; }
+#seed-form .seed-actions { margin-top: 2px; }
+.character-status {
+  display: inline-flex; align-items: center; gap: 4px;
+  max-width: 100%; margin: 1px 0 4px;
+  font: 750 clamp(.69rem, 1.55vw, .83rem)/1.2 system-ui, sans-serif;
+  color: #ffe2ad; text-shadow: 0 2px 4px #041420;
+}
+.character-status span { font-size: 1rem; }
+.polychrome-joker {
+  border-color: #e7d093 !important;
+  background: linear-gradient(145deg, #8bd2c949, #c7a8e95e, #ffde8c41) !important;
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  .character-status { font-size: .68rem; margin: 0 0 2px; }
+  .character-preview { min-height: 60px; grid-template-columns: 48px 1fr; }
+  #character-medallion { width: 47px; height: 47px; font-size: 1.4rem; }
+  #seed-form { gap: 6px; }
+}

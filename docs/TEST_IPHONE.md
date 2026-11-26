@@ -49,3 +49,11 @@ Aucune fusion de la pull request #1 tant que le test réel n'est pas validé. Co
 - [ ] Ouvrir une pochette d'Augures, choisir un effet, puis choisir **librement** une carte précise du paquet et vérifier que seule celle-là reçoit l'effet.
 - [ ] Vérifier que « Fil coupé » continue à retirer les cartes choisies.
 - [ ] Glisser un joker à vendre : la fenêtre ne bouge pas, le carré « Vendre » marche et le gain de crédits est lisible.
+
+## v18 — personnages
+- [ ] Choisir l'un des 11 personnages dans « Personnages » avant une nouvelle partie ; vérifier les symboles, descriptions et sauvegarde.
+- [ ] Le Riche : 13 crédits. Le Stratège : 5 défausses. Le Magicien : 4 cases. Le Négatif : jokers achetés négatifs même après 3 jokers. Le Marchand : prix boutique réduits et cohérents.
+- [ ] Le Multiplieur : départ avec joker polychrome ; Le Joueur : légendaire de seed ; Le Copieur Suprême : Plan de départ.
+- [ ] L’As Copieur : jouer une carte seule à la première main puis retrouver sa copie la blinde suivante ; Le Tricheur : bonus première main sur chaque main.
+- [ ] Reprendre une ancienne sauvegarde v17 : elle reste jouable sans effacer les objets, crédits ou la seed.
+- [ ] Le menu de personnage défile à l'intérieur de la boîte sur iPhone paysage sans bouger le plateau.
