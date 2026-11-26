@@ -96,19 +96,36 @@ export const augures = {
 };
 
 
-/* Choose one of three overlapping blinds per round. Skip always grants ALL
-   three rewards. Bonus tags are distinct from the consumable inventory. */
+/* The nine blind positions never change. Skip rewards are drawn per seed
+   and ante, so each column offers three different types of bonuses instead
+   of a permanent free Tarot pack in a fixed position. */
 export const casinoRooms = [
-  { name: 'Salon des tarots', mark: '✧', reward: 'pack', info: 'Un pack Tarot offert' },
-  { name: 'Salle des mains', mark: '♠', reward: 'hands', info: '+3 mains à la prochaine blinde' },
-  { name: 'Coffre doré', mark: '¤', reward: 'coins', info: '+4 crédits immédiatement' },
-  { name: 'Hall négatif', mark: '◐', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
-  { name: 'Salle du boss', mark: '★', reward: 'boss', info: '+10 crédits après la prochaine victoire contre un boss' },
-  { name: 'Tour des mains', mark: '♜', reward: 'hands', info: '+3 mains à la prochaine blinde' },
-  { name: 'Pochette Tarot secrète', mark: '✺', reward: 'pack', info: 'Un pack Tarot offert' },
-  { name: 'Épreuve du boss', mark: '⚑', reward: 'boss', info: '+10 crédits après la prochaine victoire contre un boss' },
-  { name: 'Reflet noir', mark: '◫', reward: 'negative', info: 'Deux jokers deviennent négatifs dans 3 blindes' },
+  { name: 'Coffre doré', mark: '¤', reward: 'coins', amount: 4, info: '+4 crédits immédiatement' },
+  { name: 'Grand coffre', mark: '✧', reward: 'coins', amount: 7, info: '+7 crédits immédiatement' },
+  { name: 'Salle des mains', mark: '♠', reward: 'hands', amount: 2, info: '+2 mains à la prochaine blinde' },
+  { name: 'Tour des mains', mark: '♜', reward: 'hands', amount: 3, info: '+3 mains à la prochaine blinde' },
+  { name: 'Hall négatif', mark: '◐', reward: 'negative', amount: 2, info: 'Deux jokers deviennent négatifs dans 3 blindes' },
+  { name: 'Salle du boss', mark: '★', reward: 'boss', amount: 10, info: '+10 crédits après la prochaine victoire contre un boss' },
+  { name: 'Épreuve du boss', mark: '⚑', reward: 'boss', amount: 15, info: '+15 crédits après la prochaine victoire contre un boss' },
+  { name: 'Salon des tarots', mark: '✺', reward: 'pack', amount: 1, info: 'Un pack Tarot offert' },
 ];
+
+function casinoSkipRewards(seed, anteIndex, column) {
+  const random = seededRandom(seed, 'casino-skip-rewards', anteIndex * 2 + column);
+  // No duplicate bonus types in a single Skip: choose among 4 types first.
+  const types = shuffle(['coins', 'hands', 'negative', 'boss'], random).slice(0, 3);
+  const selected = types.map(type => {
+    const variants = casinoRooms.filter(room => room.reward === type);
+    return variants[Math.floor(random() * variants.length)];
+  });
+  // Across both skippable columns, the chance of a free pack is 20% per
+  // ante, never twice; the other 80% of antes have no free pack at all.
+  const rare = seededRandom(seed, 'casino-skip-rare-pack', anteIndex);
+  const packColumn = rare() < 0.2 ? Math.floor(rare() * 2) : -1;
+  if (column === packColumn)
+    selected[Math.floor(random() * selected.length)] = casinoRooms.find(room => room.reward === 'pack');
+  return shuffle(selected, random);
+}
 
 export function casinoAvailable(state) {
   return !state.legacy && Number.isSafeInteger(state.round) &&
@@ -126,6 +143,8 @@ export function casinoBoard(state) {
   const priorLane = prior?.lane ?? null;
   const visits = (state.casinoPath ?? []).filter(entry =>
     entry.round >= anteIndex * 3 && entry.round < anteIndex * 3 + 3);
+  const rewardsByColumn = [casinoSkipRewards(state.seed, anteIndex, 0),
+    casinoSkipRewards(state.seed, anteIndex, 1)];
   return [0,1,2].flatMap(column => [0,1,2].map(lane => {
     const base = blindAt(anteIndex * 3 + column);
     const boss = column === 2 ? bosses[(anteIndex + lane) % bosses.length] : null;
@@ -136,7 +155,7 @@ export function casinoBoard(state) {
       target: Math.round(base.target * (1 + lane * .12) / 5) * 5,
     };
     const visit = visits.find(entry => entry.round === anteIndex * 3 + column);
-    return { column, lane, blind, reward: casinoRooms[column * 3 + lane],
+    return { column, lane, blind, reward: column === 2 ? null : rewardsByColumn[column][lane],
       active: column === step,
       reachable: column === step && (step === 0 || priorLane === null || Math.abs(lane-priorLane) <= 1),
       visited: visit?.lane === lane, skipped: visit?.lane === null, completed: column < step };
@@ -168,11 +187,11 @@ export function chooseCasinoRoom(state, lane) {
 }
 function addCasinoTag(state, room, roomId, nextRound) {
   const { reward: kind, info: label } = room;
-  if (kind === 'coins') return { ...state, credits: state.credits + 4 };
+  if (kind === 'coins') return { ...state, credits: state.credits + (room.amount ?? 4) };
   if (kind === 'pack') return { ...state, freeCasinoPacks: (state.freeCasinoPacks ?? 0) + 1 };
   const tags = state.casinoTags ?? [];
   return { ...state, casinoTags: [...tags, {
-    id: 'tag-' + nextRound + '-' + roomId, kind, label,
+    id: 'tag-' + nextRound + '-' + roomId, kind, label, amount: room.amount,
     remaining: kind === 'negative' ? 3 : null,
   }] };
 }
@@ -211,7 +230,7 @@ function resolveCasinoTagsOnDeal(state) {
   const negativeSlots = [...(state.negativeSlots ?? [])];
   const random = seededRandom(state.seed, 'casino-negative', state.round);
   for (const tag of state.casinoTags ?? []) {
-    if (tag.kind === 'hands') { extraHands += 3; continue; }
+    if (tag.kind === 'hands') { extraHands += tag.amount ?? 3; continue; }
     if (tag.kind !== 'negative') { keep.push(tag); continue; }
     if (tag.remaining > 1) { keep.push({ ...tag, remaining: tag.remaining - 1 }); continue; }
     const eligible = state.owned.map((_, index) => index).filter(i => !negativeSlots.includes(i));
@@ -472,7 +491,7 @@ export function useCards(state, ids, action) {
       next.reward = 4 + next.plays + next.goldReward;
       if (blindFor(state).kind === 'Boss') {
         const pending = (state.casinoTags ?? []).filter(tag => tag.kind === 'boss');
-        next.reward += pending.length * 10;
+        next.reward += pending.reduce((sum, tag) => sum + (tag.amount ?? 10), 0);
         next.casinoTags = (state.casinoTags ?? []).filter(tag => tag.kind !== 'boss');
       }
       next.credits += next.reward;
