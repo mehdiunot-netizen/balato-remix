@@ -60,3 +60,13 @@ The gameplay engine, nine blinds, saves and consumable touch behavior are untouc
 ## v38 — Full catalogue pixel Joker cards
 Every Joker now uses an illustrated 50×75 SVG card via `joker-art.mjs`, including shop and boosters. The frame recreates the look and proportions of a CC0 blank card; the illustrations and colors are original. The source pack used as a design reference is **Jfred — Pixel Cards** (`https://jfredd.itch.io/pixel-cards`), distributed under CC0 1.0. The original ZIP was not imported or redistributed. The matching reusable blank source is `art/joker-blank.svg`.
 The original raster sheets remain in the repository for backwards reference; they are not used by the new Joker card component. Numeric Joker IDs, the nine blinds, and save data are unchanged.
+
+## 27 novembre 2026 — quatre portraits détaillés originaux (première reprise)
+- Une **planche WebP originale** a été créée pour les quatre Jokers emblématiques. Pour éviter de recopier des sprites commerciaux, elle représente des scènes propres à Contre-Pli, en pixel art coloré avec vrais cadres de cartes.
+- Elle est embarquée sous la forme d'un fichier texte module `art/joker-signatures.mjs` (data URI WebP, **128 × 192 px**, 2 colonnes × 2 lignes, **7 584 octets**).
+- Correspondance **des ID numériques persistants** : haut gauche **ID 0 = Boussole** ; haut droite **ID 6 = L'Orbite de π** ; bas gauche **ID 14 = ADN** ; bas droite **ID 15 = Plan**. Les autres entrées gardent le générateur de cartes `joker-art.mjs`.
+- `joker-art.mjs` choisit ces nouvelles cartes pour les Jokers équipés, la boutique, les packs et les détails. Le moteur et les sauvegardes sont inchangés.
+- Références de chargement : `joker-art.mjs?v=3`, `art/joker-signatures.mjs?v=1`, `app.mjs?v=38`, cache `contre-pli-43`.
+- **Vérifié :** intégrité de l'image encodée (CRC32 **3370559233**, égal au fichier généré), compatibilité syntaxique et exécution d'un rendu d'un Joker iconique et d'un Joker normal avec retour SVG.
+- **Non vérifié :** résultat sur Safari iPhone physique, ressenti visuel de l'utilisateur, suite `node --test game.test.mjs`, déploiement de la branche sur GitHub Pages.
+- **Suite :** comparer l'apparence réelle aux deux captures de référence et attendre validation du style avant de remplacer les illustrations du reste du catalogue. La qualité doit primer sur la quantité.
