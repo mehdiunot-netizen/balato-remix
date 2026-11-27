@@ -1,0 +1,334 @@
+/* Contre-Pli — targeted visual repairs from iPhone screenshots, 27 Nov 2026.
+ * Presentation only. No save, seed, or blind mechanics are changed.
+ * Loaded after style.css to avoid a large risky rewrite of legacy rules. */
+
+/* Keep the browser viewport fixed, while making an oversized side HUD reachable. */
+@media (orientation: landscape) {
+  #game:has(> .play) > .blind,
+  #game:has(> .casino-board) > .blind {
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #game:has(> .play) > .blind::-webkit-scrollbar,
+  #game:has(> .casino-board) > .blind::-webkit-scrollbar { display: none; }
+
+  #game:has(> .casino-board) > .blind {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3px, .8dvh, 8px);
+    padding: clamp(4px, .7vw, 9px) !important;
+    border-right: 2px solid #22688a !important;
+    background: linear-gradient(180deg, #14384add, #081f30f0) !important;
+  }
+  #game:has(> .casino-board) > .blind h2 {
+    margin: 0;
+    font: 800 clamp(.95rem, 2.8dvh, 1.48rem)/1.05 Georgia, serif;
+    letter-spacing: -.025em;
+    color: #ffe2ad;
+  }
+  #game:has(> .casino-board) > .blind .eyebrow { font-size: clamp(.55rem, 1.35vw, .73rem); }
+  #game:has(> .casino-board) > .blind .casino-panel-note {
+    margin: 0;
+    color: #e2e5d5;
+    font: 650 clamp(.62rem, 1.35vw, .8rem)/1.16 system-ui,sans-serif;
+  }
+  #game:has(> .casino-board) > .blind .character-status {
+    margin: 2px 0 0;
+    font-size: clamp(.64rem, 1.4vw, .85rem);
+  }
+  #game:has(> .casino-board) .side-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: clamp(4px,.8dvh,7px);
+    margin-top: auto;
+    align-content: end;
+  }
+  #game:has(> .casino-board) .side-controls .wallet {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 1px 0;
+    border: 1px solid #566e72;
+    border-radius: 5px;
+    color: #ffce76;
+    font-size: clamp(.95rem, 2.6dvh, 1.3rem);
+  }
+  #game:has(> .casino-board) .side-controls button {
+    min-width: 0;
+    min-height: clamp(31px, 7.5dvh, 44px);
+    padding: 3px 2px;
+    border-radius: 5px;
+    font: 800 clamp(.58rem, 1.3vw, .77rem)/1.1 system-ui,sans-serif;
+    overflow-wrap: anywhere;
+  }
+  #game:has(> .casino-board) .side-controls button[data-action="score-detail"] {
+    grid-column: 1 / -1;
+  }
+
+  /* Compact the boss-side statistics; the bottom row of buttons must not vanish. */
+  #game:has(> .play) > .blind {
+    gap: clamp(2px, .6dvh, 5px);
+    padding: clamp(4px, .65vw, 7px) !important;
+  }
+  #game:has(> .play) > .blind h2 { font-size: clamp(.9rem, 2.7dvh, 1.42rem); }
+  #game:has(> .play) > .blind .boss-rule { line-height: 1.15; }
+  #game:has(> .play) .side-controls {
+    gap: clamp(3px,.7dvh,6px);
+    margin-top: auto;
+  }
+  #game:has(> .play) .side-controls button {
+    min-height: clamp(29px, 7dvh, 42px);
+    font-size: clamp(.62rem, 1.25vw, .82rem);
+    overflow-wrap: anywhere;
+  }
+  #game:has(> .play) .bl-goal { min-height: clamp(54px,16dvh,85px); }
+  #game:has(> .play) .bl-calculation { min-height: clamp(47px,13dvh,69px); }
+  #game:has(> .play) .bl-metrics > div { padding: 1px; }
+
+  /* A row of one to five Jokers begins next to "Jokers", not mid-screen.
+     Six or more retain the original overlapping/scrollable behaviour. */
+  .loadout .joker-collection .joker-fan:not(:has(> .joker-stack-card:nth-child(6))) {
+    justify-content: flex-start !important;
+  }
+  .loadout .joker-collection .joker-fan:has(> .joker-stack-card:nth-child(6)) {
+    justify-content: flex-start;
+  }
+  .joker-card-face.illustrated-joker {
+    overflow: hidden;
+    border: 1px solid #e4c98e;
+    border-radius: 5px;
+  }
+  .joker-card-face.illustrated-joker .joker-made-card {
+    inset: 0 0 12px 0;
+    height: calc(100% - 12px);
+    border-radius: 3px 3px 0 0;
+  }
+  .joker-card-face.illustrated-joker .joker-card-name {
+    position: absolute;
+    inset: auto 0 0;
+    display: grid;
+    place-items: center;
+    min-height: 12px;
+    max-height: 16px;
+    margin: 0;
+    padding: 1px 2px;
+    border-radius: 0 0 3px 3px;
+    background: linear-gradient(#283e4d,#14232f);
+    color: #fff0d0;
+    font: 750 clamp(.46rem, 1.12vw, .63rem)/1 system-ui,sans-serif;
+    text-shadow: 0 1px #0b1b29;
+    overflow-wrap: anywhere;
+  }
+  .joker-card-face.illustrated-joker .joker-card-edition {
+    top: 1px;
+    right: 1px;
+    padding: 2px 2px;
+    border-radius: 1px;
+    background: #624581ed;
+    color: #fff9e8;
+    font: 900 clamp(.41rem, 1.04vw, .54rem)/1 system-ui,sans-serif;
+    transform: none;
+    text-shadow: 0 1px #20192b;
+  }
+  .joker-card-face.illustrated-joker .joker-card-edition.rainbow {
+    left: 1px;
+    right: auto;
+    background: #187d82ed;
+  }
+
+  /* Balance the hand: selected cards rise clearly, without wildly uneven arcs. */
+  #game:has(> .play) .cards {
+    align-items: flex-end;
+    padding-bottom: clamp(3px, .8dvh, 8px);
+  }
+  #game:has(> .play) .cards > .card {
+    transform-origin: 50% 90%;
+    transform: translateY(var(--arc)) rotate(var(--tilt));
+  }
+  #game:has(> .play) .cards > .card[aria-pressed="true"] {
+    transform: translateY(-10px) rotate(var(--tilt));
+  }
+  #game:has(> .play) .card .rank:not(.opposite) {
+    font-size: clamp(.83rem, 2.5dvh, 1.08rem);
+  }
+
+  /* 3x3 map: more usable space for nine nodes, no duplicate giant heading. */
+  #game:has(> .casino-board) .casino-board {
+    grid-template-rows: auto minmax(0,1fr) auto auto;
+    gap: clamp(3px, .8dvh, 7px);
+    min-height: 0;
+    padding: 2px 4px 4px;
+  }
+  #game:has(> .casino-board) .casino-heading h3 {
+    margin: 0;
+    font: 900 clamp(.82rem,2dvh,1.05rem)/1 Georgia,serif;
+  }
+  #game:has(> .casino-board) .casino-heading p {
+    display: block;
+    margin-top: 2px;
+    font: 650 clamp(.56rem,1.2vw,.72rem)/1.12 system-ui,sans-serif;
+    color: #ecdebd;
+  }
+  #game:has(> .casino-board) .casino-map {
+    column-gap: clamp(12px, 2.65vw, 23px);
+    row-gap: clamp(3px,.7dvh,6px);
+    padding: 4px 5px;
+  }
+  #game:has(> .casino-board) .casino-node {
+    padding: 3px 5px;
+    gap: 2px;
+  }
+  #game:has(> .casino-board) .casino-node:disabled {
+    opacity: .83;
+    filter: saturate(.88);
+  }
+  #game:has(> .casino-board) .casino-node.is-current.is-reachable {
+    opacity: 1;
+    filter: none;
+    border-width: 2px !important;
+    border-color: #ffe5a3 !important;
+  }
+  #game:has(> .casino-board) .casino-node-type {
+    font-size: clamp(.58rem, 1.3vw, .77rem);
+  }
+  #game:has(> .casino-board) .casino-node-rank {
+    font-size: clamp(.62rem,1.2vw,.76rem);
+  }
+  #game:has(> .casino-board) .casino-node-center strong {
+    color: #ffebae;
+    font-size: clamp(.82rem, 2vw, 1.18rem);
+  }
+  #game:has(> .casino-board) .casino-node-footer {
+    padding: 2px 3px;
+    font: 680 clamp(.58rem, 1.16vw, .73rem)/1.13 system-ui,sans-serif;
+    -webkit-line-clamp: 2;
+    color: #f6ebd3;
+    background: #071c2edc;
+  }
+  #game:has(> .casino-board) .casino-path-links line {
+    stroke: #ffe0a6db;
+    stroke-width: 3.4;
+    stroke-dasharray: 5 3;
+    filter: drop-shadow(0 0 3px #ffca83);
+  }
+  #game:has(> .casino-board) .casino-commands button {
+    min-height: clamp(30px,7dvh,40px);
+    font-size: clamp(.66rem,1.48vw,.84rem);
+  }
+}
+
+/* Deck inspection uses the actual ranks, figures and pips from the played hand.
+   Only the deck list scrolls; its Close button never hides or fills the screen. */
+dialog.rules.deck-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 22px));
+  max-width: min(760px, calc(100vw - 22px));
+  height: min(92dvh, 620px);
+  max-height: calc(100dvh - 14px);
+  padding: clamp(6px,1dvh,12px);
+  overflow: hidden;
+}
+.deck-dialog h2 {
+  flex: 0 0 auto;
+  font-size: clamp(1.05rem,2.6dvh,1.4rem);
+  margin-bottom: 2px;
+}
+.deck-dialog #deck-summary {
+  flex: none;
+  font-size: clamp(.64rem,1.4vw,.8rem);
+}
+.deck-dialog .deck-card-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin: 5px 0;
+  padding: 3px;
+  grid-template-columns: repeat(auto-fill,minmax(clamp(45px,7vw,64px),1fr));
+  gap: 5px;
+  align-content: start;
+  overflow-y: auto;
+}
+.deck-dialog .deck-mini-card {
+  display: grid;
+  grid-template-rows: auto minmax(0,1fr) auto;
+  gap: 2px;
+  height: clamp(64px,20dvh,100px);
+  min-height: 0;
+  padding: 3px;
+  aspect-ratio: 2 / 3;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.deck-mini-card > strong {
+  font: 900 clamp(.72rem,1.7dvh,1rem)/1 Georgia,serif;
+  align-self: start;
+}
+.deck-mini-art {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.deck-mini-art .court {
+  width: 70%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 1px;
+}
+.deck-mini-art .pips {
+  font-size: clamp(.53rem,1.4dvh,.84rem);
+}
+.deck-mini-art .ace-pip {
+  margin: 0;
+  font-size: clamp(1rem,3.1dvh,1.55rem);
+}
+.deck-mini-card > small {
+  display: block;
+  margin: 0;
+  padding: 2px 1px;
+  border-radius: 2px;
+  background: #354d52;
+  color: #fff4df;
+  font: 750 clamp(.43rem,1vw,.61rem)/1.1 system-ui,sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.deck-mini-card .deck-mini-augure { font-size: .48rem; }
+.deck-dialog form { flex: none; padding: 0; }
+.deck-dialog form button {
+  min-height: clamp(31px,7.5dvh,40px);
+  width: 100%;
+  margin: 0;
+  padding: 2px 8px;
+  font-size: clamp(.79rem,1.6vw,.98rem);
+}
+
+/* Empty consumable slots remain empty, but look like deliberate card holders. */
+.consumable-slots .consumable-empty {
+  border: 2px dashed #d6ba80;
+  box-shadow: inset 0 0 0 3px #d1b87b29, 0 2px 3px #07192455;
+  background: radial-gradient(circle at 50% 44%,#d4bb8252,#2d4c52be 78%);
+  color: #ffe1a8;
+  border-radius: 5px;
+}
+
+/* Small landscape iPhones must not hide map labels or HUD actions. */
+@media (orientation: landscape) and (max-height: 360px) {
+  #game:has(> .casino-board) .casino-heading p { display:none; }
+  #game:has(> .casino-board) .casino-node { padding: 1px 3px; }
+  #game:has(> .casino-board) .casino-node-footer {
+    font-size: .55rem;
+    -webkit-line-clamp: 2;
+  }
+  #game:has(> .casino-board) > .blind h2 { font-size: .93rem; }
+  #game:has(> .play) > .blind .boss-rule { max-height:none; }
+  .deck-dialog .deck-mini-card { height: 61px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  #game:has(> .casino-board) .casino-node { transition:none; }
+}
