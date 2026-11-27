@@ -204,7 +204,7 @@ function render(focus, scored = false) {
         <div class="hand-info"><h3>Votre main</h3></div>
         <div class="cards" style="--adaptive-card-width:calc(${(100 / cards.length).toFixed(4)}% + ${((cards.length - 1) / cards.length * 10).toFixed(3)}px)">${cards.map((card, i) => {
           const rank = faces[card.rank] || card.rank;
-          return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''} ${card.augure || ''}" data-card="${card.id}" style="--tilt:${(i - 3.5) * 2.6}deg;--arc:${Math.abs(i - 3.5) * 3}px"
+          return `<button class="card ${'♥♦'.includes(card.suit) ? 'red' : ''} ${card.augure || ''}" data-card="${card.id}" style="--tilt:${(i - (cards.length - 1) / 2) * 1.65}deg;--arc:${Math.abs(i - (cards.length - 1) / 2) * 1.7}px"
             aria-label="${court[card.rank] || (card.rank === 14 ? 'As' : rank)} de ${names[card.suit]}${card.augure ? ' · ' + augures[card.augure].name : ''}" aria-pressed="${selected.has(card.id)}"
             aria-disabled="${selected.size === 5 && !selected.has(card.id)}">
             <span class="rank" aria-hidden="true">${rank}<small>${card.suit}</small></span>
@@ -234,25 +234,30 @@ function render(focus, scored = false) {
     const columns = ['Petites blindes','Blindes moyennes','Boss blindes'];
     const links = [0,1].flatMap(c => [0,1,2].flatMap(y =>
       [0,1,2].filter(v => Math.abs(y-v) <= 1).map(v =>
-        `<line x1="${c===0?295:595}" y1="${50+y*100}"
-          x2="${c===0?305:605}" y2="${50+v*100}"/>`))).join('');
+        `<line x1="${c===0?265:565}" y1="${50+y*100}"
+          x2="${c===0?335:635}" y2="${50+v*100}"/>`))).join('');
     content = `
       <section class="casino-board" aria-label="Carte des neuf blindes">
         <header class="casino-heading"><h3 tabindex="-1">Parcours des blindes</h3>
-          <p>Gauche → droite · ${columns[col]} · suis les chemins lumineux</p></header>
+          <p>Gauche → droite · ${columns[col]} · objectifs réels sur les cases éclairées</p></header>
         <div class="casino-map" role="group" aria-label="Trois petites, trois moyennes et trois boss">
           <svg class="casino-path-links" viewBox="0 0 900 300" preserveAspectRatio="none" aria-hidden="true">${links}</svg>
-          ${casinoTiles.map(({ column,lane,blind:choice,reward,active,reachable,visited,skipped:wasSkipped }) => `
+          ${casinoTiles.map(({ column,lane,blind:choice,reward,active,reachable,visited,skipped:wasSkipped }) => {
+            // Deterministic preview for selectable rooms: same draw and target as
+            // the actual choice, with no mutation of the current saved run.
+            // Other columns display their theoretical base objective.
+            const shownTarget = reachable ? chooseCasinoRoom(state, lane).target : choice.target;
+            return `
             <button type="button" class="casino-node casino-${['small','medium','boss'][column]}${active?' is-current':''}${reachable?' is-reachable':''}${visited?' is-visited':''}${wasSkipped?' is-skipped':''}"
               style="grid-column:${column+1};grid-row:${lane+1}"
               ${reachable?'data-casino-lane="'+lane+'"':'disabled'}
-              aria-label="${choice.name}, objectif ${scoreFormat.format(choice.target)} points. ${column===2?choice.rule:'Bonus Skip : '+reward.info}. ${reachable?'Jouer':'Inaccessible'}">
+              aria-label="${choice.name}, objectif ${scoreFormat.format(shownTarget)} points. ${column===2?choice.rule:'Bonus Skip : '+reward.info}. ${reachable?'Objectif final après distribution. Jouer':'Objectif de base indicatif, inaccessible pour le moment'}">
               <span class="casino-node-top"><span class="casino-node-type">${['PETITE','MOYENNE','BOSS'][column]}</span>
                 <span class="casino-node-rank">${['I','II','III'][lane]}</span></span>
               <span class="casino-node-center"><span class="casino-node-medal" aria-hidden="true">${['♠','◆','✦'][column]}</span>
-                <strong>${scoreFormat.format(choice.target)}</strong></span>
+                <strong>${scoreFormat.format(shownTarget)}</strong></span>
               <span class="casino-node-footer">${column===2?choice.rule:reward.info}</span>
-            </button>`).join('')}
+            </button>`; }).join('')}
         </div>
         <div class="casino-commands">
           ${col < 2 ? `<button class="primary casino-skip-all" data-action="casino-skip">SKIP ${columns[col]} · récupérer 3 bonus</button>` :
@@ -777,6 +782,13 @@ game.addEventListener('click', event => {
       const rank = document.createElement('strong');
       rank.textContent = face + card.suit;
       button.append(rank);
+      // The deck inspector uses the same playing-card artwork as the hand,
+      // not bare labels. Status remains visible and readable below the art.
+      const art = document.createElement('span');
+      art.className = 'deck-mini-art';
+      art.setAttribute('aria-hidden', 'true');
+      art.innerHTML = cardArt(card);
+      button.append(art);
       if (augure && augures[augure]) {
         const effect = document.createElement('span');
         effect.className = 'deck-mini-augure';
