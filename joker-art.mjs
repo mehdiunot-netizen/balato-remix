@@ -1,3 +1,5 @@
+import { signatureSheet, signaturePositions } from './art/joker-signatures.mjs?v=1';
+
 /*
  * Contre-Pli pixel Joker illustrations.
  * An original 50 × 75 pixel-card layout, based on the CC0 blank-card format
@@ -94,6 +96,12 @@ function motifFor(joker,id) {
   return (id * 7 + 3) % 24;
 }
 export function jokerArtwork(joker,id) {
+  // Dedicated original illustrations for four iconic Jokers.
+  // No IDs, effects, seeds, or saved data are changed by this presentation layer.
+  const sprite = signaturePositions[id];
+  if (sprite) {
+    return '<span class="joker-illustration joker-made-card joker-signature-image" aria-hidden="true" data-art-id="' + id + '" style="background-image:url(' + signatureSheet + ');background-size:200% 200%;background-position:' + sprite[0] + '% ' + sprite[1] + '%;background-repeat:no-repeat"></span>';
+  }
   const rank = joker.legendary || joker.rarity === 'legendary' ? 3 : joker.rarity === 'rare' ? 2 : joker.rarity === 'uncommon' ? 1 : 0;
   const p=PALETTES[(id + rank * 2) % PALETTES.length];
   const [base,mid,bright,accent,warm]=p;
