@@ -111,7 +111,21 @@ export function jokerArtwork(joker,id) {
   const sparks = [rect(4,4,2,2,bright),rect(36,8,2,2,accent),rect(8,57,2,2,warm),rect(36,57,2,2,bright)].join('');
   const tiled = Array.from({ length: 5 }, (_, n) => rect(2+(n*9+id*3)%37,7+(n*13+id)%51,2,2,mid)).join('');
   const horizon = path('M0 49L7 46 13 51 20 48 27 53 35 49 42 52V67H0Z', base, mid, 1);
-  const artwork = horizon + tiled + scene(selected, mid, base, bright, warm) + sparks;
+  // Each Joker receives a stable, original heraldic detail, even when motifs repeat.
+  // This distinguishes large inventories without altering IDs, effects or saved runs.
+  const emblem = (id * 11 + selected * 3) % 4;
+  const medallion = [
+    path('M16 57L21 52 26 57 21 62Z',accent,bright,1),
+    circle(21,57,5,accent,bright,1),
+    path('M15 60L21 51 27 60Z',accent,bright,1),
+    path('M16 53H26V61H16Z',accent,bright,1)
+  ][emblem];
+  const starfield = Array.from({ length: 4 }, (_, n) => {
+    const x = 7 + ((id * 13 + n * 17) % 28);
+    const y = 8 + ((id * 7 + n * 11) % 10);
+    return rect(x,y,1+(n%2),1+(n%2),n%2 ? accent : bright);
+  }).join('');
+  const artwork = horizon + tiled + starfield + scene(selected, mid, base, bright, warm) + medallion + sparks;
   const card = '<svg class="joker-pixel-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 75" aria-hidden="true" focusable="false" shape-rendering="crispEdges">' +
     rect(0,0,50,75,'#101829') + rect(1,1,48,73,light) +
     rect(3,3,44,69,base) + rect(4,4,42,67,mid) + rect(5,5,40,65,base) +
