@@ -21,6 +21,8 @@ const bosses = [
 ];
 
 const CLASSIC_ROUNDS = 24;
+// The shop can show three offers independently of five equipped joker slots.
+export const JOKER_SLOT_LIMIT = 5;
 
 export const characters = [
   { id: 'classique', name: 'Sans personnage', mark: '♠', text: 'Règles classiques, sans bonus.' },
@@ -608,7 +610,7 @@ export function sellJoker(state, slot) {
 
 export function buy(state, id) {
   if (state.phase !== 'shop' || !state.offers.includes(id) || state.owned.includes(id) ||
-      !jokers[id] || (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3) ||
+      !jokers[id] || (state.character !== 'negatif' && jokerSlotsUsed(state) >= JOKER_SLOT_LIMIT) ||
       state.credits < shopPrice(state, jokers[id].price)) return state;
   return { ...state, credits: state.credits - shopPrice(state, jokers[id].price),
     owned: [...state.owned, id],
@@ -671,7 +673,7 @@ function jokerPackCandidates(state) {
 
 export function offeredJokerPack(state) {
   if (state.phase !== 'shop' || state.jokerPackBought ||
-      (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3)) return undefined;
+      (state.character !== 'negatif' && jokerSlotsUsed(state) >= JOKER_SLOT_LIMIT)) return undefined;
   const count = jokerPackCandidates(state).length;
   if (count < jokerPacks[0].count) return undefined;
   const available = jokerPacks.map((pack, id) => ({ pack, id }))
@@ -699,7 +701,7 @@ export function chooseJokerPack(state, id) {
   if (id === null) return { ...state, phase: 'shop', jokerPackChoices: [] };
   if (!Number.isInteger(id) || !state.jokerPackChoices?.includes(id) ||
       state.owned.includes(id) || !jokers[id] ||
-      (state.character !== 'negatif' && jokerSlotsUsed(state) >= 3)) return state;
+      (state.character !== 'negatif' && jokerSlotsUsed(state) >= JOKER_SLOT_LIMIT)) return state;
   return { ...state, phase: 'shop', jokerPackChoices: [],
     owned: [...state.owned, id],
     negativeSlots: state.character === 'negatif'
@@ -765,7 +767,7 @@ export function jokerSlotsUsed(state) {
 export function eclipseOffer(state) {
   if (state.phase !== 'shop' || state.eclipseBought || !state.owned.length) return false;
   const random = seededRandom(state.seed, 'eclipse-offer', state.round);
-  return random() < 0.4 && (jokerSlotsUsed(state) < 3 ||
+  return random() < 0.4 && (jokerSlotsUsed(state) < JOKER_SLOT_LIMIT ||
     state.owned.some((_, index) => !state.negativeSlots?.includes(index)));
 }
 
@@ -775,7 +777,7 @@ export function openEclipse(state) {
   const normal = state.owned.map((_, index) => index).filter(index => !state.negativeSlots?.includes(index));
   const eclipse = {
     negative: normal.length ? normal[Math.floor(random() * normal.length)] : null,
-    copy: jokerSlotsUsed(state) < 3 ? Math.floor(random() * state.owned.length) : null,
+    copy: jokerSlotsUsed(state) < JOKER_SLOT_LIMIT ? Math.floor(random() * state.owned.length) : null,
   };
   return { ...state, phase: 'eclipse', eclipse, eclipseBought: true, credits: state.credits - shopPrice(state, ECLIPSE_PRICE) };
 }
