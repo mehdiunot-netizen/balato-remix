@@ -1,12 +1,14 @@
-# Inventaire détaillé des jokers présents dans Contre-Pli
+# Inventaire détaillé — jokers de Contre-Pli
 
-Extraction du code de `jokers.mjs`, branche `codex/contre-pli-ios`, 28 novembre 2026.
+Extraction de `jokers.mjs` sur `codex/contre-pli-ios`, 28 novembre 2026.
 
-**Portée :** 73 entrées Balatro explicitement définies par les fonctions `indep/scored/held`, et 14 jokers originaux Contre-Pli. Ce n'est **pas** encore la liste exhaustive des 150 jokers Balatro : les entrées générées autrement et les absents restent à auditer. Les noms sont ceux actuellement dans le code, **pas** des nouveaux noms définitifs. Les descriptions sont celles du code et n'attestent pas de l'exactitude vis-à-vis de Balatro.
+**87 entrées inspirées de Balatro + 14 créations Contre-Pli = 101 entrées identifiées.** Cette extraction inclut les effets spéciaux `addBalatro` (copieurs, répétitions, Perkeo, etc.), absents de la première liste. **Il manque encore 63 correspondances** pour établir une couverture documentaire des 150 jokers de Balatro ; cela ne signifie pas que tous ces jokers doivent être ajoutés sans vérifier leurs équivalents Remix.
 
-## Jokers inspirés de Balatro présents dans le code (73)
+Les noms et effets ci-dessous sont **ceux déclarés dans le dépôt**, non une certification de fidélité au Balatro original. Ne pas changer les IDs numériques ni les sauvegardes.
 
-| # | Clé interne | Nom actuel | Prix | Effet déclaré |
+## Entrées Balatro présentes (87)
+
+| # | Clé | Nom actuel | Prix | Effet dans le code |
 |---:|---|---|---:|---|
 | 1 | `balatro-joker` | Joker | 2 | +4 au multiplicateur. |
 | 2 | `jolly` | Joker joyeux | 3 | +8 au multiplicateur si la main contient une paire. |
@@ -81,10 +83,24 @@ Extraction du code de `jokers.mjs`, branche `codex/contre-pli-ios`, 28 novembre 
 | 71 | `baron` | Baron | 8 | Chaque Roi conservé en main donne ×1,5 au multiplicateur. |
 | 72 | `shoot-the-moon` | Viser la Lune | 5 | Chaque Dame conservée en main donne +13 au multiplicateur. |
 | 73 | `raised-fist` | Poing levé | 5 | La plus petite carte gardée en main donne deux fois son rang au multiplicateur. |
+| 74 | `hanging-chad` | Tchad suspendu | 4 | La première carte marquante est activée deux fois de plus. |
+| 75 | `hack` | Pirate | 6 | Chaque 2, 3, 4 ou 5 marquant est activé une seconde fois. |
+| 76 | `sock-buskin` | Tragédie et Comédie | 6 | Chaque figure marquante est activée une seconde fois. |
+| 77 | `dusk` | Crépuscule | 5 | Sur la dernière main, toutes les cartes marquantes sont activées une deuxième fois. |
+| 78 | `mime` | Mime | 5 | Répète une fois les effets de chaque carte gardée en main. |
+| 79 | `blueprint` | Blueprint | 10 | Copie le pouvoir du joker placé immédiatement à droite. |
+| 80 | `brainstorm` | Brainstorm | 10 | Copie le pouvoir du joker le plus à gauche. |
+| 81 | `chicot` | Chicot | 20 | Ignore les restrictions des boss. |
+| 82 | `perkeo` | Perkeo | 20 | À la sortie de la boutique, copie un consommable en négatif sans occuper de place. |
+| 83 | `drunkard` | Ivrogne | 4 | +1 défausse à chaque blinde. |
+| 84 | `juggler` | Jongleur | 4 | +1 carte en main à chaque distribution. |
+| 85 | `merry-andy` | Joyeux Andy | 7 | +3 défausses et −1 carte en main. |
+| 86 | `splash` | Plouf | 3 | Toutes les cartes jouées participent au score. |
+| 87 | `pareidolia` | Paréidolie | 5 | Toutes les cartes sont considérées comme des figures. |
 
 ## Jokers originaux Contre-Pli (14)
 
-| # | Nom | Prix | Effet déclaré |
+| # | Nom | Prix | Effet dans le code |
 |---:|---|---:|---|
 | 1 | Boussole | 4 | +20 jetons à chaque main. |
 | 2 | Cerf-volant | 5 | +3 au multiplicateur à chaque main. |
@@ -101,10 +117,11 @@ Extraction du code de `jokers.mjs`, branche `codex/contre-pli-ios`, 28 novembre 
 | 13 | Lest | 5 | +35 jetons si au moins deux cartes jouées ne marquent pas. |
 | 14 | Chambre d’écho | 6 | +5 au multiplicateur pour un full ou une double paire. |
 
-## Travail restant avant intégration exhaustive
+## Prochaines vérifications indispensables
 
-- Reconstituer les 150 correspondances individuelles Balatro, sans confondre nouveaux jokers et jokers déjà adaptés.
-- Renommer chaque joker de manière originale en conservant les identifiants numériques sauvegardés.
-- Détailler les 52 consommables, 32 bons, 15 decks, 28 boss, 24 tags et les autres familles dans des tableaux similaires.
-- Comparer chaque effet à une source de référence, implémenter les manquants et tester les interactions.
-- Ne jamais considérer cette extraction documentaire comme une validation des effets ni une publication de gameplay complet.
+- Confronter les 87 clés au catalogue officiel de 150, identifier les manquants et les adaptations déjà présentes.
+- Définir un nom **original** Contre-Pli pour chaque correspondance sans écraser les noms originaux déjà approuvés.
+- Contrôler raretés, déclencheurs, ordre, retriggers, copies, éditions et prix.
+- Implémenter puis tester les effets manquants, avec préservation de `contre-pli-v1`, de la seed et des règles Remix.
+
+Référence de cadrage : [Catalogue Balatro → Contre-Pli](CATALOGUE_BALATRO_CONTRE_PLI.md).
