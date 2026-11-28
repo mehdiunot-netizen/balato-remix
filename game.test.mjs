@@ -663,8 +663,8 @@ test('packs Joker : achat, choix unique, refus des doublons et sauvegarde', () =
   assert.deepEqual(skip.owned, shop.owned);
 });
 
-test('packs Joker : trois places et personnage Négatif respectés', () => {
-  const full = { ...start('PLEIN-2026'), phase: 'shop', credits: 50, owned: [0, 1, 2] };
+test('packs Joker : cinq places et personnage Négatif respectés', () => {
+  const full = { ...start('PLEIN-2026'), phase: 'shop', credits: 50, owned: [0, 1, 2, 3, 4] };
   assert.equal(offeredJokerPack(full), undefined);
   assert.equal(openJokerPack(full, 0), full);
   const neg = { ...start('NEG-JOKER-2026', 'negatif'), phase: 'shop', credits: 50 };
@@ -735,4 +735,21 @@ test('la vente fonctionne en cours de blinde et réindexe une Éclipse ouverte',
   assert.deepEqual(eclipse.eclipse, { negative: 1, copy: null });
   assert.equal(chooseEclipse(eclipse, 'copy'), eclipse);
   assert.deepEqual(chooseEclipse(eclipse, 'negative').negativeSlots, [0, 1]);
+});
+
+test('la boutique conserve trois offres, mais le joueur peut équiper cinq jokers', () => {
+  const shop = { ...start('TROIS-OFFRES-CINQ-SLOTS'), phase: 'shop', credits: 100,
+    owned: [0, 1, 2], offers: [3, 4, 5] };
+  assert.equal(shop.offers.length, 3, 'trois propositions en boutique');
+  const fourth = buy(shop, 3);
+  assert.equal(fourth.owned.length, 4, 'quatrième joker achetable');
+  const fifth = buy(fourth, 4);
+  assert.equal(fifth.owned.length, 5, 'cinquième joker achetable');
+  assert.equal(buy(fifth, 5), fifth, 'sixième joker normal bloqué');
+  assert.equal(offeredJokerPack(fifth), undefined, 'pack bloqué à cinq jokers normaux');
+  const oneNegative = { ...fifth, negativeSlots: [0] };
+  assert.equal(jokerSlotsUsed(oneNegative), 4, 'joker négatif libère une place');
+  const sixth = buy(oneNegative, 5);
+  assert.equal(sixth.owned.length, 6, 'une sixième carte peut être possédée avec un négatif');
+  assert.equal(jokerSlotsUsed(sixth), 5);
 });
