@@ -1,0 +1,11 @@
+{
+  "id": "./",
+  "name": "Contre-Pli",
+  "short_name": "Contre-Pli",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#061920",
+  "theme_color": "#061920",
+  "icons": [{ "src": "./touch.png", "sizes": "192x192", "type": "image/png" }]
+}

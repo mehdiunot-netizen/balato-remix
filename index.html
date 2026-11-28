@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061920">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Contre-Pli">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./emblem.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./touch.png">
+  <link rel="stylesheet" href="./style.css?v=41">
+  <link rel="stylesheet" href="./ui-polish.css?v=2">
+  <title>Contre-Pli</title>
+</head>
+<body>
+  <section class="rotate-screen" aria-labelledby="rotate-title">
+    <div>
+      <img src="./emblem.svg" alt="" width="60" height="60">
+      <h1 id="rotate-title">Tourne ton iPhone</h1>
+      <p>Contre-Pli se joue à l’horizontale.</p>
+      <p>Si l’écran ne pivote pas, désactive le verrouillage de l’orientation dans le Centre de contrôle.</p>
+    </div>
+  </section>
+  <section class="lobby" aria-labelledby="lobby-title">
+    <div class="lobby-inner">
+      <div class="lobby-brand">
+        <img src="./emblem.svg" alt="" width="72" height="72">
+        <h1 id="lobby-title">Contre<span>‑</span>Pli</h1>
+      </div>
+      <nav class="lobby-actions" aria-label="Menu principal">
+        <button class="primary" id="enter">Jouer</button>
+        <button id="new-run" aria-haspopup="dialog">Personnages</button>
+      </nav>
+    </div>
+  </section>
+  <main class="table" hidden>
+    <div id="game"></div>
+    <p id="announcement" class="sr-only" role="status"></p>
+  </main>
+  <dialog class="rules seed-dialog" id="seed-dialog" aria-labelledby="seed-title">
+    <form id="seed-form">
+      <h2 id="seed-title">Nouvelle partie</h2>
+      <div class="character-picker">
+        <label for="character-select">Choisir un personnage</label>
+        <select id="character-select" name="character" required></select>
+        <div class="character-preview" aria-live="polite">
+          <span id="character-medallion" aria-hidden="true">♠</span>
+          <div><strong id="character-name">Sans personnage</strong>
+            <p id="character-description">Règles classiques.</p></div>
+        </div>
+      </div>
+      <label id="seed">Seed (facultative)
+        <input type="text" maxlength="64" autocapitalize="off" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="new-run-note">Une nouvelle partie remplace la sauvegarde actuelle. Le personnage d'une partie en cours ne change pas.</p>
+      <div class="seed-actions">
+        <button type="button" id="cancel-seed">Retour</button>
+        <button class="primary" type="submit">Jouer</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog class="rules" id="rules" aria-labelledby="rules-title">
+    <h2 id="rules-title">Règles du jeu</h2>
+      <p>Franchissez huit mises, chacune avec une petite blinde, une grosse blinde et un boss. Vous commencez chaque blinde avec quatre mains et trois défausses, sauf contrainte de boss.</p>
+      <p>Touchez jusqu’à cinq cartes. Jouez la combinaison pour marquer, ou défaussez ces cartes pour en piocher d’autres. Seules les cartes qui forment la combinaison ajoutent leurs jetons. Valet, dame, roi et as valent 11 jetons chacun. Le score de la main est égal aux jetons multipliés par le multiplicateur.</p>
+      <p>De la plus faible à la plus forte : carte haute, paire, double paire, brelan, quinte, couleur, full, carré, quinte flush. L’as vaut aussi 1 dans A–2–3–4–5.</p>
+      <p>Chaque blinde réussie rapporte quatre crédits, plus un par main restante. La boutique propose des jokers qui bonifient vos prochaines mains. Vous pouvez en garder trois.</p>
+      <p>Deux emplacements de consommables sont disponibles (quatre avec le Magicien). Touche une carte consommable pour lire son effet, puis confirme « Utiliser ». Glisse une carte pour modifier l’ordre sans l’activer. Dans un pack Tarot, choisis l’effet puis la carte précise à améliorer. Un pack Joker te permet de choisir un joker à équiper.</p>
+    <p>Seed de la partie <code id="current-seed"></code></p>
+    <form method="dialog"><button class="primary">Retour</button></form>
+  </dialog>
+  <dialog class="rules" id="score-dialog" aria-labelledby="score-detail-title">
+    <h2 id="score-detail-title">Détail du score</h2>
+    <p id="score-detail-name"></p>
+    <ol></ol>
+    <p id="score-detail-total"></p>
+    <form method="dialog"><button class="primary">Retour</button></form>
+  </dialog>
+  <dialog class="rules" id="game-info-dialog" aria-labelledby="game-info-title">
+    <h2 id="game-info-title">Partie Infos</h2>
+    <p id="game-info-summary"></p>
+    <ol id="game-info-list"></ol>
+    <form method="dialog"><button class="primary">Fermer</button></form>
+  </dialog>
+  <dialog class="rules deck-dialog" id="deck-dialog" aria-labelledby="deck-dialog-title">
+    <h2 id="deck-dialog-title">Ton paquet</h2>
+    <p id="deck-summary" aria-live="polite"></p>
+    <ul id="deck-card-list" class="deck-card-grid" aria-label="Toutes les cartes de ton paquet"></ul>
+    <form method="dialog"><button class="primary">Fermer</button></form>
+  </dialog>
+  <dialog class="rules joker-detail" id="joker-dialog" aria-labelledby="joker-dialog-title">
+    <div id="joker-dialog-art" aria-hidden="true"></div>
+    <h2 id="joker-dialog-title"></h2>
+    <p id="joker-dialog-text"></p>
+    <p id="joker-dialog-editions"></p>
+    <button type="button" id="joker-dialog-sell" class="sell-joker" hidden>Vendre</button>
+    <form method="dialog"><button class="primary">Fermer</button></form>
+  </dialog>
+  <dialog class="rules consumable-detail" id="consumable-dialog" aria-labelledby="consumable-dialog-title">
+    <div id="consumable-dialog-art" aria-hidden="true"></div>
+    <h2 id="consumable-dialog-title"></h2>
+    <p id="consumable-dialog-text"></p>
+    <div class="consumable-dialog-actions">
+      <button type="button" class="primary" id="consumable-dialog-use">Utiliser cette carte</button>
+      <form method="dialog"><button type="submit">Annuler</button></form>
+    </div>
+  </dialog>
+  <script type="module" src="./app.mjs?v=41"></script>
+</body>
+</html>
