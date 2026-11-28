@@ -332,3 +332,31 @@ dialog.rules.deck-dialog[open] {
 @media (prefers-reduced-motion:reduce) {
   #game:has(> .casino-board) .casino-node { transition:none; }
 }
+
+/* Retouches visuelles du 28 novembre : uniquement l'apparence. */
+:root { --suit-heart:#e34848; --suit-diamond:#f0a832; --suit-club:#38a96b; --suit-spade:#477fce; }
+body { background:radial-gradient(ellipse at 48% 24%,#655036 0%,#342c29 48%,#191f23 100%); }
+#game .loadout .joker-collection, #game .loadout .consumables {
+  background:linear-gradient(160deg,#493b32ed,#292d2bee);
+  border:1px solid #9c795b; border-radius:12px;
+  box-shadow:inset 0 1px #f7ce8b25,0 4px 14px #0005;
+}
+#game .loadout .joker-fan, #game .loadout .consumable-slots {
+  background:linear-gradient(125deg,#252e2bd9,#3d3930d9);
+  border:1px solid #7d6956; border-radius:9px;
+}
+#game .loadout .consumable-empty {
+  background:transparent; border:1px dashed #8c7965; box-shadow:none; color:#a9997f;
+}
+#game .joker-card-face.illustrated-joker {
+  border-radius:7px; border:2px solid #c8a477;
+  box-shadow:inset 0 0 0 2px #251e1b,2px 4px 7px #0007;
+}
+#game .joker-card-face.illustrated-joker.negative-joker,
+#game .negative-joker .joker-card-face.illustrated-joker { border-color:#9bb6c6; }
+#game .card .rank small, #game .card .card-art .pips, #game .card .card-art .ace-pip,
+.deck-dialog .deck-mini-card strong, .deck-dialog .deck-mini-art .pips, .deck-dialog .deck-mini-art .ace-pip { color:inherit; }
+#game .card.suit-heart, .deck-dialog .deck-mini-card.suit-heart { color:var(--suit-heart); }
+#game .card.suit-diamond, .deck-dialog .deck-mini-card.suit-diamond { color:var(--suit-diamond); }
+#game .card.suit-club, .deck-dialog .deck-mini-card.suit-club { color:var(--suit-club); }
+#game .card.suit-spade, .deck-dialog .deck-mini-card.suit-spade { color:var(--suit-spade); }
