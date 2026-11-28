@@ -40,3 +40,20 @@ Projet : `mehdiunot-netizen/balato-remix` — jeu de cartes iPhone 11, en paysag
 
 ## Statut à la fin de la session
 Dernier travail de gameplay/visuels : 30 jokers illustrés, consommables déplaçables et confirmation d'utilisation. Rangement documentaire des branches seulement ensuite ; **aucune branche supprimée, aucune fusion**.
+
+## Demandes visuelles confirmées — 28 novembre 2026
+
+L'utilisateur demande à ChatGPT de réaliser les corrections dans le code, et pas seulement de préparer une passation pour Codex. Ces changements concernent **uniquement l'interface** et doivent être réalisés prudemment, sans réécrire le jeu.
+
+1. **Jokers** : les représenter comme de véritables cartes verticales illustrées posées sur la table, avec cadre et éditions visibles, et non comme des boutons de menu. Respecter les portraits originaux et les gestes existants.
+2. **Zone des jokers** : un seul conteneur partagé, sobre, affichant les cartes côte à côte avec chevauchement lorsque nécessaire ; compteur de capacité dynamique (base 5, effets négatifs et copies selon les règles déjà codées). Pas de boîtes individuelles dorées.
+3. **Zone des consommables** : un seul conteneur partagé, sobre, avec cartes côte à côte et compteur 0/2, 1/2 ou 2/2 selon l'occupation. Conserver l'ouverture des détails au toucher, le déplacement par glissement et l'utilisation seulement après confirmation.
+4. **Ambiance** : remplacer les couleurs trop froides par une palette plus chaleureuse, riche et lisible, avec une atmosphère de casino, adaptée au paysage sur iPhone 11.
+5. **Enseignes des cartes ordinaires** : affichage quatre couleurs, sans modifier la taille ni la forme des symboles : ♥ rouge, ♦ orange/doré, ♣ vert, ♠ bleu. Appliquer de manière cohérente.
+6. **Consultation du paquet** : au clic sur le paquet, montrer les cartes restantes regroupées par enseigne en piles/éventails compacts, avec chevauchement plutôt qu'une grille de cartes isolées. La demande orale précise un « éventail de 2 cartes » ; vérifier le rendu attendu avant d'interpréter ce détail comme une nouvelle règle de jeu.
+
+### Garde-fous de réalisation
+- **Ne pas casser ce qui fonctionne** : préserver gameplay, seeds déterministes, sauvegardes `contre-pli-v1`, blindes, carte du casino, boutiques, personnages et interactions.
+- Travailler à partir de `codex/contre-pli-ios` ; vérifier le SHA avant écriture, conserver une possibilité de retour arrière, limiter les modifications aux fichiers nécessaires. Ne pas fusionner la PR #1 ni modifier `main`.
+- Contrôler les régressions avec `node --test game.test.mjs` si possible et vérifier le rendu sur iPhone 11/Safari avant de déclarer la correction terminée.
+- **Statut au moment de cette note : demandes documentées, corrections visuelles non encore appliquées ni validées sur appareil.**
