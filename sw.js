@@ -1,5 +1,5 @@
-const CACHE = 'contre-pli-45';
-const assets = ['./', './index.html', './style.css?v=41', './ui-polish.css?v=2', './app.mjs?v=40', './game.mjs?v=29',
+const CACHE = 'contre-pli-46';
+const assets = ['./', './index.html', './style.css?v=41', './ui-polish.css?v=2', './app.mjs?v=41', './game.mjs?v=30',
   './jokers.mjs?v=24', './joker-art.mjs?v=4', './art/joker-signatures.mjs?v=1', './art/joker-blank.svg', './manifest.webmanifest', './emblem.svg', './touch.png', './art/observatoire.jpg', './art/figures.jpg', './art/emblemes.jpg', './art/augures.jpg', './art/joker-originals-v1.webp', './art/joker-originals-v2.webp', './art/chambre-echo.webp'];
 
 self.addEventListener('install', event => {
