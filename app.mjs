@@ -1,4 +1,4 @@
-import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=29';
+import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, JOKER_SLOT_LIMIT, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=30';
 import { jokerArtwork } from './joker-art.mjs?v=4';
 
 const game = document.querySelector('#game');
@@ -355,13 +355,13 @@ function render(focus, scored = false) {
             aria-label="Acheter ${consumable.name} pour ${shopPrice(state, consumable.price)} crédits">${consumable.mark} ${consumable.name} · ${shopPrice(state, consumable.price)} cr.</button>` : ''}</div>` : ''}
         <ul class="offers">${state.offers.map(id => {
           const joker = jokers[id];
-          const full = state.character !== 'negatif' && jokerSlotsUsed(state) >= 3;
+          const full = state.character !== 'negatif' && jokerSlotsUsed(state) >= JOKER_SLOT_LIMIT;
           return `<li>${jokerPortrait(id, joker.mark)}
           <div><strong>${joker.name}</strong><small>${joker.text}</small></div>
           <button data-buy="${id}" aria-label="Acheter ${joker.name} pour ${joker.price} crédits"
           ${full || state.credits < shopPrice(state, joker.price) ? 'disabled' : ''}>${shopPrice(state, joker.price)} cr.</button></li>`;
         }).join('')}</ul>
-        ${jokerSlotsUsed(state) >= 3 ? '<p>Vos trois emplacements sont occupés.</p>' : ''}
+        ${jokerSlotsUsed(state) >= JOKER_SLOT_LIMIT ? '<p>Vos cinq emplacements sont occupés.</p>' : ''}
       </section>`;
   } else {
     content = `
@@ -416,7 +416,7 @@ function render(focus, scored = false) {
     </section>
     ${content}
     <section class="loadout ${state.character === 'magicien' ? 'character-magicien' : ''}" aria-label="Inventaire">
-      <div class="joker-collection"><h3>Jokers <span>${state.character === 'negatif' ? state.owned.length + ' · ∞' : jokerSlotsUsed(state) + '/3'}</span></h3>
+      <div class="joker-collection"><h3>Jokers <span>${state.character === 'negatif' ? state.owned.length + ' · ∞' : jokerSlotsUsed(state) + '/' + JOKER_SLOT_LIMIT}</span></h3>
         ${loadout ? '<ul class="joker-fan" aria-label="Jokers équipés, toucher pour voir les détails">' + loadout + '</ul>' : '<p>Aucun joker équipé.</p>'}
         ${tokenLabels.length ? `<div class="casino-tokens" aria-label="Bonus de Skip en attente">${tokenLabels.map(label => `<span class="casino-token" title="${label}">✦ ${label}</span>`).join('')}</div>` : ''}</div>
       <div class="consumables"><h3>Consommables <span>${inventory.length}/${capacity}</span></h3>
