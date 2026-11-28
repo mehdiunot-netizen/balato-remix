@@ -1,5 +1,5 @@
 import { advance, applyAugure, augures, blindFor, buy, buyConsumable, cancelAugureTarget, casinoBoard, casinoOffers, characterFor, characters, chooseAugure, chooseCasinoRoom, chooseEclipse, consumableOffer, consumables, consumableSlotsFor, continueRun, deckFor, ECLIPSE_PRICE, eclipseOffer, jokers, jokerSlotsUsed, offeredPack, openCasino, openCasinoBonusPack, openEclipse, openJokerPack, openPack, jokerPacks, offeredJokerPack, chooseJokerPack, packs, previewHand, pruneDeck, removableCount, restoreRun, reorderConsumable, reorderJoker, sellJoker, shopPrice, skipCasinoRow, start, startInCasino, useCards, useConsumable } from './game.mjs?v=29';
-import { jokerArtwork } from './joker-art.mjs?v=3';
+import { jokerArtwork } from './joker-art.mjs?v=4';
 
 const game = document.querySelector('#game');
 const announcement = document.querySelector('#announcement');
